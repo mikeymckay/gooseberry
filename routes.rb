@@ -1,7 +1,7 @@
 
 get '/' do
 
-  question_sets_string =  question_sets().map do |question_set|
+  question_sets_string =  QuestionSets.all.map do |question_set|
     "
       <li>
         #{question_set} <br/>
@@ -19,7 +19,7 @@ get '/' do
 end
 
 get '/edit/:question_set' do |question_set|
-  question_set = get_question_set(question_set)
+  question_set = QuestionSets.get_question_set(question_set)
   "
 <!DOCTYPE html>
 <html lang='en'>
@@ -85,76 +85,8 @@ end
 
 
 get "/#{$passwords_and_config["phone_number"]}/incoming" do
-
-  from = params["from"] # The number that sent the message
-  to = params["to"]     # The number to which the message was sent
-  text = params["text"] # The message content
-  date = params["date"] # The date and time when the message was received
-  id = params["id"]     # The internal ID that we use to store this message
-  linkId = params["linkId"] # Optional parameter required when responding to an on-demand user request with a premium message
-
-  state = get_state(from, text)
-
-  case text
-    when /^Start (.+)/i
-      state["question_set"] = $1
-    when /^Reset$/i
-      state["current_question_index"] = nil
-      state["results"] = []
-    else
-      if state["question_set"].nil?
-        send_message(from,"No question set loaded.")
-        return
-      end
-  end
-
-  questions = get_questions_for_question_set(state["question_set"])
-
-  validation_message = nil
-  current_question_index = -1
-
-  if state["current_question_index"]
-    current_question_index = state["current_question_index"]
-    current_question = questions[current_question_index]
-
-    answer = if current_question["post_process"]
-      eval "answer = '#{text}';#{current_question["post_process"]}"
-    else
-      text
-    end
-
-    validation_message = if current_question["validation"]
-      eval "answer = '#{answer}';#{current_question["validation"]}"
-    end
-
-    state["results"].push (
-      {
-        "question_index" => current_question_index,
-        "question" => current_question["text"],
-        "answer" => answer,
-        "valid" => validation_message ? validation_message : true,
-        "datetime" => Time.now.to_s
-      }
-    )
-
-    # Redo the same question if it was invalid
-    current_question_index = current_question_index-1 if validation_message
-  end
-
-  message = ""
-  current_question_index += 1
-  if questions[current_question_index]
-    state["current_question_index"] = current_question_index
-    message = questions[current_question_index]["text"]
-    message = "#{validation_message}, try again: #{message}" if validation_message
-  else
-    state["current_question_index"] = nil
-    message = "#{state["question_set"]} has been completed - thanks."
-  end
-
-  result = send_message(from,message)
-  # TODO check result to make sure message was sent before saving state
-  save_state(state)
+  message = Message.new(params)
+  result = message.process
 
   return "
     <h1>#{result}</h1>

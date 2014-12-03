@@ -12,11 +12,12 @@ require 'date'
 require 'time'
 require 'fuzzy_match'
 
-
-require_relative  'AfricasTalkingGateway'
-
 $passwords_and_config = JSON.parse(IO.read("passwords_and_config.json"))
-$gateway = AfricasTalkingGateway.new($passwords_and_config["username"],$passwords_and_config["api_key"])
+$database_name = "gooseberry"
+$db = CouchRest.database("http://localhost:5984/#{$database_name}")
 
-require_relative  'methods'
-require_relative  'routes'
+require_relative 'methods'
+require_relative 'Message'
+require_relative 'ValidationHelpers'
+require_relative 'QuestionSets'
+require_relative 'routes'
