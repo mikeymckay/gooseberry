@@ -3,13 +3,27 @@ class Message
   def initialize(options)
     @from = options["from"] # The number that sent the message
     @to = options["to"]     # The number to which the message was sent
-    @text = options["text"] # The message content
     @date = options["date"] # The date and time when the message was received
     @id = options["id"]     # The internal ID that we use to store this message
     @linkId = options["linkId"] # Optional parameter required when responding to an on-demand user request with a premium message
-
+    @text = clean(options["text"]) # The message content
   end
 
+  def clean(text)
+    # Replace all leading spaces
+    # Replace two or more spaces with a single space
+    text.gsub(/^ +/, '').gsub(/  +/, ' ')
+  end
+
+  def default_empty_state
+    {
+      "from" => @from,
+      "linkId" => @linkId,
+      "current_question_index" => nil,
+      "results" => [
+      ]
+    }
+  end
 
   def set_state
     state_view = $db.view("#{$database_name}/states", {
@@ -18,12 +32,7 @@ class Message
     })['rows'].first
 
     if state_view.nil?
-      @state = {
-        "from" => @from,
-        "current_question_index" => nil,
-        "results" => [
-        ]
-      }
+      @state = default_empty_state
     else
       @state = state_view["doc"]
     end
@@ -33,20 +42,31 @@ class Message
   def process_triggers
     case @text
       when /^Start (.+)/i
-        @state["question_set"] = $1
+        question_set_name = $1.upcase
+
+        if QuestionSets.get_question_set(question_set_name).nil?
+          closest_match = FuzzyMatch.new(QuestionSets.all).find(question_set_name)
+          send_message(@from, "#{question_set_name} is not a valid question set - did you mean #{closest_match}? Please try again.") unless QuestionSets.get_question_set(question_set_name)
+          return false
+        else
+          @state["question_set"] = $1.upcase
+          @state["current_question_index"] = nil
+          @state["results"] = []
+        end
+
+
       when /^Reset$/i
         @state["current_question_index"] = nil
         @state["results"] = []
       else
         if @state["question_set"].nil?
-          send_message(from,"No question set loaded.")
+          puts "No question set loaded."
+          #send_message(@from,"No question set loaded.")
           return false
         end
     end
     true
   end
-
-
 
   def process_answer
     @validation_message = nil
@@ -58,11 +78,11 @@ class Message
 
       answer = @text
       if current_question["post_process"]
-        answer = eval "answer = '#{@text}';#{current_question["post_process"]}"
+        answer = eval "answer = '#{@text.sub(/'/,'') if @text}';#{current_question["post_process"]}"
       end
 
       @validation_message = if current_question["validation"]
-        eval "answer = '#{answer}';#{current_question["validation"]}"
+        eval "answer = '#{answer.sub(/'/,'') if answer}';#{current_question["validation"]}"
       end
 
       @state["results"].push(
@@ -104,7 +124,8 @@ class Message
       message = "#{@validation_message}, try again: #{message}" if @validation_message
     else
       @state["current_question_index"] = nil
-      message = "#{@state["question_set"]} is complete - thanks."
+      # Check for a complete message, or just use the default
+      message = QuestionSets.get_question_set(@state["question_set"])["complete message"] || "#{@state["question_set"]} is complete - thanks."
     end
 
     send_message(@from,message)
@@ -116,7 +137,19 @@ class Message
   end
 
   def send_message(to,message)
-    return "#{to}:#{message}"
+    puts "Sending #{to}: #{message}"
+    if @id #source was an SMS
+      $gateway.send_message(
+        to,
+        message,
+        {
+          "linkId" => @linkId,
+          "bulkSMSMode" => 0
+        }
+      )
+    else # source was via web
+      "#{to}:#{message}"
+    end
   end
 
   def process

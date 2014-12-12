@@ -34,18 +34,19 @@ class AfricasTalkingGateway
   VOICE_URL   = 'https://voice.africastalking.com/call'
   ACCEPT_TYPE = 'application/json'
 
-  def initialize(user_name,api_key)
+  def initialize(user_name,api_key,from)
     @user_name = user_name
     @api_key = api_key
+    @from = from
   end
 
-  def send_message(recipients, message)
+  def send_message(recipients, message, options = {})
     data = nil
     response_code = nil
 
-    post_body = {:username => @user_name, :message => message, :to => recipients }
+    post_body = {:username => @user_name, :message => message, :to => recipients, :from => @from}.merge(options)
 
-    http = Curl.post(SMS_URL, post_body) do |curl|
+    Curl.post(SMS_URL, post_body) do |curl|
       curl.headers['Accept'] = ACCEPT_TYPE
       curl.headers['apiKey'] = @api_key
       curl.on_body { |body|

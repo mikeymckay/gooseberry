@@ -7,6 +7,7 @@ get '/' do
         #{question_set} <br/>
         <a href='' onClick='document.location = \"/#{$passwords_and_config["phone_number"]}/incoming?from=\"+ document.getElementsByTagName(\"input\")[0].value + \"&text=Start%20#{question_set}\";return false'>capture data</a> as <input value='web'></input><br/>
         <a href='/edit/#{question_set}'>edit questions</a> <br/>
+        <a href='/table/#{question_set}'>results</a></li>
         <a href='/csv/#{question_set}'>csv</a></li>
     "
   end.join("")
@@ -83,8 +84,42 @@ get '/csv/:question_set' do |question_set|
   get_csv(question_set)
 end
 
+get '/table/:question_set' do |question_set|
+  table = get_table(question_set)
+  "
+  <html>
+    <body>
+      <a href='/'>Home</a>
+      <br/>
+      #{table}
+    </body>
+  </html>
+
+  "
+end
+
+
+post "/#{$passwords_and_config["phone_number"]}/incoming" do
+  puts params
+  message = Message.new(params)
+  result = message.process
+
+  print result
+
+  return "
+    <h1>#{result}</h1>
+    SMS:<br/> 
+    <textarea style='height:200px;width:300px;'></textarea>
+    <button type='button' onClick='document.location=document.location.href.replace(/text=.*/,\"text=\" + document.getElementsByTagName(\"textarea\")[0].value)'>Send</button>
+    <br/>
+    <br/>
+    <br/>
+    <a href='/'>Home</a>
+  "
+end
 
 get "/#{$passwords_and_config["phone_number"]}/incoming" do
+  puts params
   message = Message.new(params)
   result = message.process
 
@@ -96,6 +131,6 @@ get "/#{$passwords_and_config["phone_number"]}/incoming" do
     <br/>
     <br/>
     <br/>
-    <a href='/#{$passwords_and_config["phone_number"]}/incoming?from=web&text=Start%20Nairobi%201'>Start Nairobi 1</a>
+    <a href='/'>Home</a>
   "
 end

@@ -1,5 +1,5 @@
 function(doc) {
   if(doc.from){
-    emit(doc.from, null);
+    emit(doc.from, doc.question_set);
   }
 }
