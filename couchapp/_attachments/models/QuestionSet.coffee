@@ -16,6 +16,9 @@ class QuestionSet extends Backbone.Model
     _(@get("questions")).map (questionData) ->
       questionData.name or questionData.text
 
+  questionStringsWithNumberAndDate: =>
+    ["From","Date"].concat @questionStrings()
+
 class QuestionSetCollection extends Backbone.Collection
   model: QuestionSet
   url: "/question_set"

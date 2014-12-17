@@ -1,0 +1,22 @@
+#editor {
+    margin: 0;
+    height: 50%;
+    top: 100px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+
+.clickable{
+  text-decoration: underline;
+}
+#content{
+  z-index: 100;
+}
+#content table tbody tr.odd{
+  background-color: #F5FAFA
+}
+#content table tbody tr.even{
+  background-color: #FAF5F5
+}

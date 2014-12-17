@@ -5,7 +5,36 @@ class Router extends Backbone.Router
     "question_set/:name": "questionSet"
     "question_set/:name/edit": "editQuestionSet"
     "question_set/:name/results": "questionSetResults"
+    "log/:phoneNumber/:questionSet": "log"
+    "analyze/:questionSet": "analyze"
     '*invalidRoute' : 'showErrorPage'
+
+  log: (phoneNumber,questionSet) ->
+    Gooseberry.view
+      name: "states"
+      key: phoneNumber
+      include_docs: true
+      success: (result) ->
+        console.log result
+        state = (_(result.rows).find (result) ->
+          result.value[0] is questionSet
+        ).doc
+
+        $("#content").html "
+          <a href='#question_set/#{questionSet}/results'>#{questionSet} Results</a>
+          <pre class='readonly' id='editor'></pre>
+        "
+
+        editor = ace.edit('editor')
+        editor.setTheme('ace/theme/dawn')
+        editor.setReadOnly(true)
+        editor.getSession().setMode('ace/mode/json')
+        json = state.results
+        editor.setValue(JSON.stringify(json,null,2))
+
+  analyze: (questionSet) ->
+    $("#content").html "
+    "
 
   questionSets: () ->
     Gooseberry.questionSetCollectionView = new QuestionSetCollectionView() unless Gooseberry.questionSetView

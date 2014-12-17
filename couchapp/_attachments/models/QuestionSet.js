@@ -8,6 +8,7 @@ QuestionSet = (function(_super) {
   __extends(QuestionSet, _super);
 
   function QuestionSet() {
+    this.questionStringsWithNumberAndDate = __bind(this.questionStringsWithNumberAndDate, this);
     this.questionStrings = __bind(this.questionStrings, this);
     this.fetchResults = __bind(this.fetchResults, this);
     this.name = __bind(this.name, this);
@@ -36,6 +37,10 @@ QuestionSet = (function(_super) {
     return _(this.get("questions")).map(function(questionData) {
       return questionData.name || questionData.text;
     });
+  };
+
+  QuestionSet.prototype.questionStringsWithNumberAndDate = function() {
+    return ["From", "Date"].concat(this.questionStrings());
   };
 
   return QuestionSet;

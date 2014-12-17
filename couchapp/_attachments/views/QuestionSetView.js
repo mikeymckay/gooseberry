@@ -29,9 +29,9 @@ QuestionSetView = (function(_super) {
 
   QuestionSetView.prototype.render = function() {
     var editor, json;
-    this.$el.html("<a href='#question_set/" + (this.questionSet.name()) + "/edit'>Edit</a> <pre id='editor'></pre>");
+    this.$el.html("<a href='#question_set/" + (this.questionSet.name()) + "/edit'>Edit</a> <pre class='readonly' id='editor'></pre>");
     editor = ace.edit('editor');
-    editor.setTheme('ace/theme/twilight');
+    editor.setTheme('ace/theme/dawn');
     editor.setReadOnly(true);
     editor.getSession().setMode('ace/mode/json');
     json = this.questionSet.toJSON();
@@ -101,6 +101,7 @@ QuestionSetResults = (function(_super) {
   __extends(QuestionSetResults, _super);
 
   function QuestionSetResults() {
+    this.analyze = __bind(this.analyze, this);
     this.renderTableContents = __bind(this.renderTableContents, this);
     this.renderTableStructure = __bind(this.renderTableStructure, this);
     return QuestionSetResults.__super__.constructor.apply(this, arguments);
@@ -109,6 +110,7 @@ QuestionSetResults = (function(_super) {
   QuestionSetResults.prototype.el = '#content';
 
   QuestionSetResults.prototype.fetchAndRender = function(name) {
+    this.$el.html("<h1>" + name + "</h1> <div id='stats'></div>");
     this.questionSet = new QuestionSet({
       _id: name
     });
@@ -118,7 +120,8 @@ QuestionSetResults = (function(_super) {
           _this.renderTableStructure();
           return _this.questionSet.fetchResults({
             success: function(results) {
-              return _this.renderTableContents(results);
+              _this.renderTableContents(results);
+              return _this.analyze();
             }
           });
         };
@@ -127,19 +130,99 @@ QuestionSetResults = (function(_super) {
   };
 
   QuestionSetResults.prototype.renderTableStructure = function() {
-    return this.$el.html("<table id='results'> <thead> " + (_(this.questionSet.questionStrings()).map(function(header) {
+    return this.$el.append("<table id='results'> <thead> " + (_(this.questionSet.questionStringsWithNumberAndDate()).map(function(header) {
       return "<th>" + header + "</th>";
-    }).join("")) + " </thead> </table>");
+    }).join("")) + " </thead> <tbody> </tbody> </table>");
   };
 
   QuestionSetResults.prototype.renderTableContents = function(results) {
-    return $("#results").dataTable({
-      data: results
+    this.$el.find("tbody").html(_(results).map((function(_this) {
+      return function(result) {
+        var _i, _ref, _results;
+        return "<tr> <td><a href='#log/" + result["from"] + "/" + (_this.questionSet.name()) + "'>" + result["from"] + "</a></td> <td>" + result["updated_at"] + "</td> " + (_((function() {
+          _results = [];
+          for (var _i = 0, _ref = _this.questionSet.questionStrings().length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; 0 <= _ref ? _i++ : _i--){ _results.push(_i); }
+          return _results;
+        }).apply(this)).map(function(index) {
+          return "<td>" + (result[index] || "-") + "</td>";
+        }).join("")) + " </tr>";
+      };
+    })(this)).join(""));
+    return this.$el.find("table").dataTable({
+      order: [[1, "desc"]]
     });
   };
 
+  QuestionSetResults.prototype.analyze = function() {
+    return Gooseberry.view({
+      name: "analysis_by_question_set",
+      key: this.questionSet.name(),
+      include_docs: false,
+      success: (function(_this) {
+        return function(results) {
+          var completeResults, completionDurations, fastestCompletion, incompletePercentage, incompleteResults, meanTimeToComplete, medianTimeToComplete, mistakeCount, mistakePercentage, mistakes, requiredIndices, slowestCompletion, totalResults;
+          completionDurations = [];
+          incompleteResults = [];
+          completeResults = 0;
+          mistakes = [];
+          requiredIndices = _this.questionSet.get("required_indices");
+          if (requiredIndices != null) {
+            requiredIndices = JSON.parse(requiredIndices);
+          }
+          _(_(results.rows).pluck("value")).each(function(result) {
+            if (requiredIndices != null) {
+              if (_(requiredIndices).difference(result.validIndices).length === 0) {
+                completeResults += 1;
+                if (result.updatedAt && result.firstResultTime) {
+                  completionDurations.push(moment(result.updatedAt).diff(moment(result.firstResultTime), "seconds"));
+                }
+              } else {
+                incompleteResults.push(result["from"]);
+              }
+            }
+            if (!_(result.invalidResult).isEmpty()) {
+              return mistakes.push(result.invalidResult);
+            }
+          });
+          mistakeCount = 0;
+          _(mistakes).each(function(mistake) {
+            return _(mistake).each(function(value, index) {
+              return mistakeCount += 1;
+            });
+          });
+          if (requiredIndices) {
+            totalResults = completeResults + incompleteResults.length;
+            incompletePercentage = "" + (Math.floor(incompleteResults.length / totalResults * 100)) + " %";
+            mistakePercentage = "" + (Math.floor(100 * mistakeCount / (totalResults * requiredIndices.length))) + " %";
+          }
+          fastestCompletion = moment.duration(_(completionDurations).min(), "seconds").humanize();
+          slowestCompletion = moment.duration(_(completionDurations).max(), "seconds").humanize();
+          medianTimeToComplete = moment.duration(math.median(completionDurations), "seconds").humanize();
+          meanTimeToComplete = moment.duration(math.mean(completionDurations), "seconds").humanize();
+          return _this.$el.find("#stats").html("<ul> <li>Median Time To Complete: " + medianTimeToComplete + " (Fastest: " + fastestCompletion + " - Slowest: " + slowestCompletion + ") <!-- <li>Mean Time To Complete: " + meanTimeToComplete + " --> <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>" + incompleteResults.length + "</button> (" + incompletePercentage + ") <li>Total number of validation failures: <button id='toggleMistakes' type='button'>" + mistakeCount + "</button> (" + mistakePercentage + ") </ul> <div id='incompleteResultsDetails' style='display:none'> <h2>Incomplete Results</h2> <ul> " + (_(incompleteResults).map(function(number) {
+            return "<li>" + number;
+          }).join("")) + " </ul> </div> <div id='mistakeDetails' style='display:none'> <h2>Validation Failures</h2> <table> <thead> <td>Question</td> <td>Answer</td> </thead> <tbody> " + (_(mistakes).map(function(mistake) {
+            return _(mistake).map(function(value, index) {
+              return "<tr> <td>" + (_this.questionSet.questionStrings()[index]) + "</td> <td>" + (value || "") + "</td> </tr>";
+            }).join("");
+          }).join("")) + " </tbody> </table> </div>");
+        };
+      })(this)
+    });
+  };
+
+  QuestionSetResults.prototype.toggleIncompletes = function() {
+    return $("#incompleteResultsDetails").toggle();
+  };
+
+  QuestionSetResults.prototype.toggleMistakes = function() {
+    return $("#mistakeDetails").toggle();
+  };
+
   QuestionSetResults.prototype.events = {
-    "click button#save": "save"
+    "click button#save": "save",
+    "click button#toggleMistakes": "toggleMistakes",
+    "click button#toggleIncompletes": "toggleIncompletes"
   };
 
   return QuestionSetResults;
@@ -184,12 +267,11 @@ QuestionSetCollectionView = (function(_super) {
       success: (function(_this) {
         return function() {
           _this.$el.html("<h1>Question Sets</h1> <table> <thead> <th>Name</th><th>Number of results</th> </thead> <tbody> " + (questionSets.map(function(questionSet) {
-            return "<tr data-name='" + (questionSet.name()) + "'> <td class='name clickable-row'>" + (questionSet.name()) + "</td> <td class='number-of-results'></td> </tr>";
+            return "<tr data-name='" + (questionSet.name()) + "'> <td class='name clickable-row'>" + (questionSet.name()) + "</td> <td class='clickable number-of-results'></td> </tr>";
           }).join("")) + " </tbody> </table>");
           return questionSets.each(function(questionSet) {
             return questionSet.fetchResults({
               success: function(results) {
-                console.log(results.length);
                 return $("tr[data-name='" + (questionSet.name()) + "'] td.number-of-results").html(results.length);
               }
             });

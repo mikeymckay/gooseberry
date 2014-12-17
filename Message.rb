@@ -6,7 +6,7 @@ class Message
     @date = options["date"] # The date and time when the message was received
     @id = options["id"]     # The internal ID that we use to store this message
     @linkId = options["linkId"] # Optional parameter required when responding to an on-demand user request with a premium message
-    @text = clean(options["text"]) # The message content
+    @text = clean(options["text"]) if options["text"]# The message content
   end
 
   def clean(text)
@@ -25,21 +25,32 @@ class Message
     }
   end
 
-  def set_state
-    state_view = $db.view("#{$database_name}/states", {
+  def states_for_user
+    $db.view("#{$database_name}/states", {
       "key" => @from,
       "include_docs" => true
-    })['rows'].first
+    })['rows']
+  end
 
-    if state_view.nil?
+  def get_state_for_user_with_question_set(question_set)
+    states_for_user.find{|state|state["question_set"] == question_set}
+  end
+
+  def set_most_recent_state
+    states = states_for_user()
+
+    if states.length == 0
       @state = default_empty_state
     else
-      @state = state_view["doc"]
+      # Get the most recently updated state
+      @state = states.max_by{|state|state["value"][1]}["doc"]
     end
 
   end
 
+
   def process_triggers
+    puts @state
     case @text
       when /^Start (.+)/i
         question_set_name = $1.upcase
@@ -48,24 +59,37 @@ class Message
           closest_match = FuzzyMatch.new(QuestionSets.all).find(question_set_name)
           send_message(@from, "#{question_set_name} is not a valid question set - did you mean #{closest_match}? Please try again.") unless QuestionSets.get_question_set(question_set_name)
           return false
+        # If the question_set to start isn't the most recently used state, get the right one or create a new one
+        elsif question_set_name != @state["question_set"]
+          @state = get_state_for_user_with_question_set(question_set_name)
+          if @state.nil?
+            @state = default_empty_state
+            @state["question_set"] = question_set_name
+          end
+          puts @state
+        # Else reset the current state
         else
-          @state["question_set"] = $1.upcase
-          @state["current_question_index"] = nil
-          @state["results"] = []
+          reset_state
         end
 
-
       when /^Reset$/i
-        @state["current_question_index"] = nil
-        @state["results"] = []
+        reset_state
       else
         if @state["question_set"].nil?
           puts "No question set loaded."
-          #send_message(@from,"No question set loaded.")
+          return false
+        elsif @state["complete"]
+          puts "Question set complete - nothing left to do."
           return false
         end
     end
     true
+  end
+
+  def reset_state
+    @state["current_question_index"] = nil
+    @state["results"] = []
+    @state["complete"] = false
   end
 
   def process_answer
@@ -126,6 +150,7 @@ class Message
       @state["current_question_index"] = nil
       # Check for a complete message, or just use the default
       message = QuestionSets.get_question_set(@state["question_set"])["complete message"] || "#{@state["question_set"]} is complete - thanks."
+      @state["complete"] = true
     end
 
     send_message(@from,message)
@@ -152,13 +177,23 @@ class Message
     end
   end
 
-  def process
-    set_state
-    return unless process_triggers
+  def set_questions
     @questions = QuestionSets.get_questions(@state["question_set"])
+  end
+
+  def complete?
+    @state["complete"] == true
+  end
+
+  def process
+    set_most_recent_state
+    return unless process_triggers
+    set_questions
     process_answer
     result = send_next_message
     # TODO check result to make sure message was sent before saving state
+    puts "SAVING"
+    puts @state
     save_state
     return result
   end

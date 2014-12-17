@@ -16,7 +16,35 @@ Router = (function(_super) {
     "question_set/:name": "questionSet",
     "question_set/:name/edit": "editQuestionSet",
     "question_set/:name/results": "questionSetResults",
+    "log/:phoneNumber/:questionSet": "log",
+    "analyze/:questionSet": "analyze",
     '*invalidRoute': 'showErrorPage'
+  };
+
+  Router.prototype.log = function(phoneNumber, questionSet) {
+    return Gooseberry.view({
+      name: "states",
+      key: phoneNumber,
+      include_docs: true,
+      success: function(result) {
+        var editor, json, state;
+        console.log(result);
+        state = (_(result.rows).find(function(result) {
+          return result.value[0] === questionSet;
+        })).doc;
+        $("#content").html("<a href='#question_set/" + questionSet + "/results'>" + questionSet + " Results</a> <pre class='readonly' id='editor'></pre>");
+        editor = ace.edit('editor');
+        editor.setTheme('ace/theme/dawn');
+        editor.setReadOnly(true);
+        editor.getSession().setMode('ace/mode/json');
+        json = state.results;
+        return editor.setValue(JSON.stringify(json, null, 2));
+      }
+    });
+  };
+
+  Router.prototype.analyze = function(questionSet) {
+    return $("#content").html("");
   };
 
   Router.prototype.questionSets = function() {
