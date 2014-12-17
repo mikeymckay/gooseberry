@@ -121,7 +121,7 @@ end
 get "/send_reminders/:question_set/:minutes" do |question_set_name,minutes|
   question_set= $db.get question_set_name
 
-  result = question_set.to_json
+  result = ""
 
   $db.view("#{$database_name}/reminders", {
     "startkey" => [question_set_name],
@@ -142,6 +142,7 @@ get "/send_reminders/:question_set/:minutes" do |question_set_name,minutes|
 
       message = "REMINDER: #{outstanding_question}"
       puts "Sending #{to}: #{message}"
+      result += "Sending #{to}: #{message}<br/>"
 
       if linkId #source was an SMS
         #$gateway.send_message(
@@ -159,6 +160,7 @@ get "/send_reminders/:question_set/:minutes" do |question_set_name,minutes|
 
       else # source was via web
         puts "Not sending reminder to #{from} since it was entered via the web"
+        result += "Not sending reminder to #{from} since it was entered via the web<br/>"
       end
 
     end
