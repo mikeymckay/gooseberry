@@ -10,6 +10,9 @@ class Message
   end
 
   def clean(text)
+    if ! text.valid_encoding?
+      text.encode!("US-ASCII", :invalid=>:replace, :replace=>"?").encode('US-ASCII')
+    end
     # Replace all leading spaces
     # Replace two or more spaces with a single space
     text.gsub(/^ +/, '').gsub(/  +/, ' ')
@@ -20,6 +23,7 @@ class Message
       "from" => @from,
       "linkId" => @linkId,
       "current_question_index" => nil,
+      "complete" => false,
       "results" => [
       ]
     }
@@ -63,13 +67,12 @@ class Message
         elsif question_set_name != @state["question_set"]
           @state = get_state_for_user_with_question_set(question_set_name)
           if @state.nil?
-            @state = default_empty_state
-            @state["question_set"] = question_set_name
+            new_state
           end
           puts @state
-        # Else reset the current state
+        # Else create a new state
         else
-          reset_state
+          new_state
         end
 
       when /^Reset$/i
@@ -84,6 +87,11 @@ class Message
         end
     end
     true
+  end
+
+  def new_state
+    @state = default_empty_state
+    @state["question_set"] = question_set_name
   end
 
   def reset_state

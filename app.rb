@@ -12,7 +12,7 @@ require 'date'
 require 'time'
 require 'fuzzy_match'
 
-RestClient.log = 'stdout'
+#RestClient.log = 'stdout'
 
 $passwords_and_config = JSON.parse(IO.read("passwords_and_config.json"))
 $database_name = "gooseberry"

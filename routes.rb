@@ -98,13 +98,12 @@ get '/table/:question_set' do |question_set|
   "
 end
 
-
-post "/#{$passwords_and_config["phone_number"]}/incoming" do
-  puts params
+def incoming(params)
+  puts "#{Time.now} Received: #{params}"
   message = Message.new(params)
   result = message.process
 
-  pus result
+  puts result
 
   return "
     <h1>#{result}</h1>
@@ -116,6 +115,14 @@ post "/#{$passwords_and_config["phone_number"]}/incoming" do
     <br/>
     <a href='/'>Home</a>
   "
+end
+
+get "/#{$passwords_and_config["phone_number"]}/incoming" do
+  incoming(params)
+end
+
+post "/#{$passwords_and_config["phone_number"]}/incoming" do
+  incoming(params)
 end
 
 get "/send_reminders/:question_set/:minutes" do |question_set_name,minutes|
@@ -137,24 +144,25 @@ get "/send_reminders/:question_set/:minutes" do |question_set_name,minutes|
 
     if reminders.length < 2 and minutes_since_last_update > minutes.to_i
 
-      outstanding_question = question_set["questions"][row["doc"]["current_question_index"]]
+      outstanding_question = question_set["questions"][row["doc"]["current_question_index"]]["text"]
       linkId = row["doc"]["linkId"]
 
       message = "REMINDER: #{outstanding_question}"
-      puts "Sending #{to}: #{message}"
-      result += "Sending #{to}: #{message}<br/>"
+      puts "Sending #{from}: #{message}"
+      result += "Sending #{from}: #{message}<br/>"
 
       if linkId #source was an SMS
-        #$gateway.send_message(
-        #  from,
-        #  message,
-        #  {
-        #    "linkId" => linkId,
-        #    "bulkSMSMode" => 0
-        #  }
-        #)
+        result = $gateway.send_message(
+          from,
+          message,
+          {
+            "linkId" => linkId,
+            "bulkSMSMode" => 0
+          }
+        )
         doc = row["doc"]
         doc["updated_at"] = Time.now.to_s
+        doc["time_reminders_sent"] = [] unless doc["time_reminders_sent"]
         doc["time_reminders_sent"].push Time.now.to_s
         $db.save_doc doc
 
@@ -167,21 +175,4 @@ get "/send_reminders/:question_set/:minutes" do |question_set_name,minutes|
   }
   result
 
-end
-
-get "/#{$passwords_and_config["phone_number"]}/incoming" do
-  puts params
-  message = Message.new(params)
-  result = message.process
-
-  return "
-    <h1>#{result}</h1>
-    SMS:<br/> 
-    <textarea style='height:200px;width:300px;'></textarea>
-    <button type='button' onClick='document.location=document.location.href.replace(/text=.*/,\"text=\" + document.getElementsByTagName(\"textarea\")[0].value)'>Send</button>
-    <br/>
-    <br/>
-    <br/>
-    <a href='/'>Home</a>
-  "
 end
