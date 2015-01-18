@@ -104,6 +104,11 @@ class QuestionSetResults extends Backbone.View
     )
     @$el.find("table").dataTable
       order: [[ 1, "desc" ]]
+      iDisplayLength: 25
+      dom: 'T<"clear">lfrtip'
+      tableTools:
+        sSwfPath: "js-libraries/copy_csv_xls_pdf.swf"
+
 
 
   analyze: =>
