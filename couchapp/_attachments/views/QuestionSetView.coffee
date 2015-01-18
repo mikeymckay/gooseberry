@@ -141,10 +141,11 @@ class QuestionSetResults extends Backbone.View
           incompletePercentage = "#{Math.floor(incompleteResults.length/totalResults*100)} %"
           mistakePercentage = "#{Math.floor(100 * mistakeCount/(totalResults*requiredIndices.length))} %"
 
-        fastestCompletion = moment.duration(_(completionDurations).min(), "seconds").humanize()
-        slowestCompletion = moment.duration(_(completionDurations).max(), "seconds").humanize()
-        medianTimeToComplete = moment.duration(math.median(completionDurations), "seconds").humanize()
-        meanTimeToComplete = moment.duration(math.mean(completionDurations), "seconds").humanize()
+        if completionDurations.length > 0
+          fastestCompletion = moment.duration(_(completionDurations).min(), "seconds").humanize()
+          slowestCompletion = moment.duration(_(completionDurations).max(), "seconds").humanize()
+          medianTimeToComplete = moment.duration(math.median(completionDurations), "seconds").humanize()
+          meanTimeToComplete = moment.duration(math.mean(completionDurations), "seconds").humanize()
 
         @$el.find("#stats").html "
           <ul>
@@ -152,7 +153,7 @@ class QuestionSetResults extends Backbone.View
             <!--
             <li>Mean Time To Complete: #{meanTimeToComplete}
             -->
-            <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>#{incompleteResults.length}</button> (#{incompletePercentage})
+            <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>#{incompleteResults.length}</button> (#{incompletePercentage}) <a href='http://gooseberry.tangerinecentral.org/send_reminders/#{@questionSet.name()}/240'>Send reminder SMS</a>
             <li>Total number of validation failures: <button id='toggleMistakes' type='button'>#{mistakeCount}</button> (#{mistakePercentage})
           </ul>
           <div id='incompleteResultsDetails' style='display:none'>
@@ -209,6 +210,65 @@ class QuestionSetCollectionView extends Backbone.View
   events:
     "click td.name": "openQuestionSet"
     "click td.number-of-results": "openResults"
+    "click #toggleNew": "toggleNew"
+    "click #create": "create"
+    "click #delete": "delete"
+    "click #reallyDelete": "reallyDelete"
+    "click #cancel": "cancel"
+    "click #copy": "copy"
+    "click #createCopy": "createCopy"
+    "click #interact": "interact"
+
+  interact: (event) =>
+    name = $(event.target).closest("tr").attr("data-name")
+    #target = "http://localhost:9393/22340/incoming"
+    target = "http://gooseberry.tangerinecentral.org/22340/incoming"
+    Gooseberry.router.navigate "interact/#{name}?target=#{target}", {trigger: true}
+
+  cancel: ->
+    $("deleteMessage").html ""
+
+  copy: (event) =>
+    @copySource = $(event.target).closest("tr").attr("data-name")
+    $("#copyForm").html "
+      <input style='text-transform: uppercase' id='copyFormField' value='COPY OF #{@copySource}'></input><button id='createCopy'>Create</button>
+    "
+
+  createCopy: =>
+    questionSet = new QuestionSet
+      _id: @copySource
+    questionSet.fetch
+      success: =>
+        questionSet.clone()
+        questionSet.set "_id", $("#copyFormField").val().toUpperCase()
+        questionSet.unset "_rev"
+        questionSet.save
+          success: =>
+            console.log "AAA"
+            @render()
+          error: =>
+            console.log "RAA"
+
+  reallyDelete: =>
+    questionSet = new QuestionSet
+      _id: @deleteTarget
+    questionSet.fetch
+      success: =>
+        questionSet.destroy
+          success: =>
+            @render()
+
+  delete: (event) =>
+    @deleteTarget = $(event.target).closest("tr").attr("data-name")
+    $("#deleteMessage").html "Are you sure you want to delete #{@deleteTarget}? <button id='reallyDelete'>Yes</button><button id='cancelDelete'>Cancel</button>"
+
+  create: ->
+    newName = $("#newName").val().toUpperCase()
+    if newName
+      Gooseberry.router.navigate "question_set/#{newName}/new", {trigger: true}
+
+  toggleNew: ->
+    $("#new").toggle()
 
   openResults: (event) ->
     name = $(event.target).closest("tr").attr("data-name")
@@ -226,17 +286,31 @@ class QuestionSetCollectionView extends Backbone.View
       success: =>
         @$el.html "
           <h1>Question Sets</h1>
+          <button id='toggleNew'>New</button>
+          <br/>
+          <div style='display:none' id='new'>
+            <br/>
+            Name:  <input id='newName' style='text-transform: uppercase' type='text'></input>
+            <button id='create'>Create</button>
+            <br/>
+          </div>
+          <br/>
+          <div id='deleteMessage'></div>
+          <div id='copyForm'></div>
           <table>
             <thead>
-              <th>Name</th><th>Number of results</th>
+              <th>Name</th><th>Number of results</th><th/><th/>
             </thead>
             <tbody>
               #{
                questionSets.map (questionSet) ->
                 "
                   <tr data-name='#{questionSet.name()}'>
-                    <td class='name clickable-row'>#{questionSet.name()}</td>
+                    <td class='name clickable'>#{questionSet.name()}</td>
                     <td class='clickable number-of-results'></td>
+                    <td><small><button id='interact'>interact</button></small></td>
+                    <td><small><button id='delete'>x</button></small></td>
+                    <td><small><button id='copy'>copy</button></small></td>
                   </tr>
                 "
                .join("")

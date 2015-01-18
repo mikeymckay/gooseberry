@@ -195,11 +195,13 @@ QuestionSetResults = (function(_super) {
             incompletePercentage = "" + (Math.floor(incompleteResults.length / totalResults * 100)) + " %";
             mistakePercentage = "" + (Math.floor(100 * mistakeCount / (totalResults * requiredIndices.length))) + " %";
           }
-          fastestCompletion = moment.duration(_(completionDurations).min(), "seconds").humanize();
-          slowestCompletion = moment.duration(_(completionDurations).max(), "seconds").humanize();
-          medianTimeToComplete = moment.duration(math.median(completionDurations), "seconds").humanize();
-          meanTimeToComplete = moment.duration(math.mean(completionDurations), "seconds").humanize();
-          return _this.$el.find("#stats").html("<ul> <li>Median Time To Complete: " + medianTimeToComplete + " (Fastest: " + fastestCompletion + " - Slowest: " + slowestCompletion + ") <!-- <li>Mean Time To Complete: " + meanTimeToComplete + " --> <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>" + incompleteResults.length + "</button> (" + incompletePercentage + ") <li>Total number of validation failures: <button id='toggleMistakes' type='button'>" + mistakeCount + "</button> (" + mistakePercentage + ") </ul> <div id='incompleteResultsDetails' style='display:none'> <h2>Incomplete Results</h2> <ul> " + (_(incompleteResults).map(function(number) {
+          if (completionDurations.length > 0) {
+            fastestCompletion = moment.duration(_(completionDurations).min(), "seconds").humanize();
+            slowestCompletion = moment.duration(_(completionDurations).max(), "seconds").humanize();
+            medianTimeToComplete = moment.duration(math.median(completionDurations), "seconds").humanize();
+            meanTimeToComplete = moment.duration(math.mean(completionDurations), "seconds").humanize();
+          }
+          return _this.$el.find("#stats").html("<ul> <li>Median Time To Complete: " + medianTimeToComplete + " (Fastest: " + fastestCompletion + " - Slowest: " + slowestCompletion + ") <!-- <li>Mean Time To Complete: " + meanTimeToComplete + " --> <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>" + incompleteResults.length + "</button> (" + incompletePercentage + ") <a href='http://gooseberry.tangerinecentral.org/send_reminders/" + (_this.questionSet.name()) + "/240'>Send reminder SMS</a> <li>Total number of validation failures: <button id='toggleMistakes' type='button'>" + mistakeCount + "</button> (" + mistakePercentage + ") </ul> <div id='incompleteResultsDetails' style='display:none'> <h2>Incomplete Results</h2> <ul> " + (_(incompleteResults).map(function(number) {
             return "<li>" + number;
           }).join("")) + " </ul> </div> <div id='mistakeDetails' style='display:none'> <h2>Validation Failures</h2> <table> <thead> <td>Question</td> <td>Answer</td> </thead> <tbody> " + (_(mistakes).map(function(mistake) {
             return _(mistake).map(function(value, index) {
@@ -234,6 +236,11 @@ QuestionSetCollectionView = (function(_super) {
 
   function QuestionSetCollectionView() {
     this.render = __bind(this.render, this);
+    this["delete"] = __bind(this["delete"], this);
+    this.reallyDelete = __bind(this.reallyDelete, this);
+    this.createCopy = __bind(this.createCopy, this);
+    this.copy = __bind(this.copy, this);
+    this.interact = __bind(this.interact, this);
     return QuestionSetCollectionView.__super__.constructor.apply(this, arguments);
   }
 
@@ -241,7 +248,95 @@ QuestionSetCollectionView = (function(_super) {
 
   QuestionSetCollectionView.prototype.events = {
     "click td.name": "openQuestionSet",
-    "click td.number-of-results": "openResults"
+    "click td.number-of-results": "openResults",
+    "click #toggleNew": "toggleNew",
+    "click #create": "create",
+    "click #delete": "delete",
+    "click #reallyDelete": "reallyDelete",
+    "click #cancel": "cancel",
+    "click #copy": "copy",
+    "click #createCopy": "createCopy",
+    "click #interact": "interact"
+  };
+
+  QuestionSetCollectionView.prototype.interact = function(event) {
+    var name, target;
+    name = $(event.target).closest("tr").attr("data-name");
+    target = "http://gooseberry.tangerinecentral.org/22340/incoming";
+    return Gooseberry.router.navigate("interact/" + name + "?target=" + target, {
+      trigger: true
+    });
+  };
+
+  QuestionSetCollectionView.prototype.cancel = function() {
+    return $("deleteMessage").html("");
+  };
+
+  QuestionSetCollectionView.prototype.copy = function(event) {
+    this.copySource = $(event.target).closest("tr").attr("data-name");
+    return $("#copyForm").html("<input style='text-transform: uppercase' id='copyFormField' value='COPY OF " + this.copySource + "'></input><button id='createCopy'>Create</button>");
+  };
+
+  QuestionSetCollectionView.prototype.createCopy = function() {
+    var questionSet;
+    questionSet = new QuestionSet({
+      _id: this.copySource
+    });
+    return questionSet.fetch({
+      success: (function(_this) {
+        return function() {
+          questionSet.clone();
+          questionSet.set("_id", $("#copyFormField").val().toUpperCase());
+          questionSet.unset("_rev");
+          return questionSet.save({
+            success: function() {
+              console.log("AAA");
+              return _this.render();
+            },
+            error: function() {
+              return console.log("RAA");
+            }
+          });
+        };
+      })(this)
+    });
+  };
+
+  QuestionSetCollectionView.prototype.reallyDelete = function() {
+    var questionSet;
+    questionSet = new QuestionSet({
+      _id: this.deleteTarget
+    });
+    return questionSet.fetch({
+      success: (function(_this) {
+        return function() {
+          return questionSet.destroy({
+            success: function() {
+              return _this.render();
+            }
+          });
+        };
+      })(this)
+    });
+  };
+
+  QuestionSetCollectionView.prototype["delete"] = function(event) {
+    this.deleteTarget = $(event.target).closest("tr").attr("data-name");
+    return $("#deleteMessage").html("Are you sure you want to delete " + this.deleteTarget + "? <button id='reallyDelete'>Yes</button><button id='cancelDelete'>Cancel</button>");
+  };
+
+  QuestionSetCollectionView.prototype.create = function() {
+    var newName;
+    newName = $("#newName").val().toUpperCase();
+    if (newName) {
+      return Gooseberry.router.navigate("question_set/" + newName + "/new", {
+        trigger: true
+      });
+    }
+  };
+
+  QuestionSetCollectionView.prototype.toggleNew = function() {
+    return $("#new").toggle();
   };
 
   QuestionSetCollectionView.prototype.openResults = function(event) {
@@ -266,8 +361,8 @@ QuestionSetCollectionView = (function(_super) {
     return questionSets.fetch({
       success: (function(_this) {
         return function() {
-          _this.$el.html("<h1>Question Sets</h1> <table> <thead> <th>Name</th><th>Number of results</th> </thead> <tbody> " + (questionSets.map(function(questionSet) {
-            return "<tr data-name='" + (questionSet.name()) + "'> <td class='name clickable-row'>" + (questionSet.name()) + "</td> <td class='clickable number-of-results'></td> </tr>";
+          _this.$el.html("<h1>Question Sets</h1> <button id='toggleNew'>New</button> <br/> <div style='display:none' id='new'> <br/> Name:  <input id='newName' style='text-transform: uppercase' type='text'></input> <button id='create'>Create</button> <br/> </div> <br/> <div id='deleteMessage'></div> <div id='copyForm'></div> <table> <thead> <th>Name</th><th>Number of results</th><th/><th/> </thead> <tbody> " + (questionSets.map(function(questionSet) {
+            return "<tr data-name='" + (questionSet.name()) + "'> <td class='name clickable'>" + (questionSet.name()) + "</td> <td class='clickable number-of-results'></td> <td><small><button id='interact'>interact</button></small></td> <td><small><button id='delete'>x</button></small></td> <td><small><button id='copy'>copy</button></small></td> </tr>";
           }).join("")) + " </tbody> </table>");
           return questionSets.each(function(questionSet) {
             return questionSet.fetchResults({

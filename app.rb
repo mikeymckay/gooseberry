@@ -11,6 +11,11 @@ require 'securerandom'
 require 'date'
 require 'time'
 require 'fuzzy_match'
+require 'sinatra/cross_origin'
+
+configure do
+  enable :cross_origin
+end
 
 #RestClient.log = 'stdout'
 
@@ -29,5 +34,6 @@ $gateway = AfricasTalkingGateway.new(
 require_relative 'reports'
 require_relative 'Message'
 require_relative 'ValidationHelpers'
+require_relative 'ZanzibarHelpers'
 require_relative 'QuestionSets'
 require_relative 'routes'

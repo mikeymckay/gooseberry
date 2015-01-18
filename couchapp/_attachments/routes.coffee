@@ -3,11 +3,20 @@ class Router extends Backbone.Router
     "": "questionSets"
     "question_sets": "questionSets"
     "question_set/:name": "questionSet"
+    "question_set/:name/new": "newQuestionSet"
     "question_set/:name/edit": "editQuestionSet"
     "question_set/:name/results": "questionSetResults"
+    "interact/:name": "interact"
     "log/:phoneNumber/:questionSet": "log"
     "analyze/:questionSet": "analyze"
     '*invalidRoute' : 'showErrorPage'
+
+  interact: (name) ->
+    target = document.location.hash.substring(document.location.hash.indexOf('=')+1)
+    Gooseberry.interactView = new InteractView() unless Gooseberry.interactView
+    Gooseberry.interactView.name = name
+    Gooseberry.interactView.target = target
+    Gooseberry.interactView.render()
 
   log: (phoneNumber,questionSet) ->
     Gooseberry.view
@@ -37,12 +46,22 @@ class Router extends Backbone.Router
     "
 
   questionSets: () ->
-    Gooseberry.questionSetCollectionView = new QuestionSetCollectionView() unless Gooseberry.questionSetView
+    Gooseberry.questionSetCollectionView = new QuestionSetCollectionView() unless Gooseberry.questionSetCollectionView
     Gooseberry.questionSetCollectionView.render()
 
   questionSet: (name) ->
     Gooseberry.questionSetView = new QuestionSetView() unless Gooseberry.questionSetView
     Gooseberry.questionSetView.fetchAndRender(name)
+
+  newQuestionSet: (name) ->
+    questionSet = new QuestionSet
+      _id: name.toUpperCase()
+    questionSet.save
+      questions: []
+    ,
+      success: ->
+        Gooseberry.router.navigate "question_set/#{name}/edit",
+          trigger: true
 
   editQuestionSet: (name) ->
     Gooseberry.questionSetEdit = new QuestionSetEdit() unless Gooseberry.questionSetEdit

@@ -103,7 +103,11 @@ def incoming(params)
   message = Message.new(params)
   result = message.process
 
-  puts result
+  if params["plain"] and params["plain"] == "true"
+    puts "***********"
+    puts result
+    return result
+  end
 
   return "
     <h1>#{result}</h1>

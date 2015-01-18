@@ -14,11 +14,24 @@ Router = (function(_super) {
     "": "questionSets",
     "question_sets": "questionSets",
     "question_set/:name": "questionSet",
+    "question_set/:name/new": "newQuestionSet",
     "question_set/:name/edit": "editQuestionSet",
     "question_set/:name/results": "questionSetResults",
+    "interact/:name": "interact",
     "log/:phoneNumber/:questionSet": "log",
     "analyze/:questionSet": "analyze",
     '*invalidRoute': 'showErrorPage'
+  };
+
+  Router.prototype.interact = function(name) {
+    var target;
+    target = document.location.hash.substring(document.location.hash.indexOf('=') + 1);
+    if (!Gooseberry.interactView) {
+      Gooseberry.interactView = new InteractView();
+    }
+    Gooseberry.interactView.name = name;
+    Gooseberry.interactView.target = target;
+    return Gooseberry.interactView.render();
   };
 
   Router.prototype.log = function(phoneNumber, questionSet) {
@@ -48,7 +61,7 @@ Router = (function(_super) {
   };
 
   Router.prototype.questionSets = function() {
-    if (!Gooseberry.questionSetView) {
+    if (!Gooseberry.questionSetCollectionView) {
       Gooseberry.questionSetCollectionView = new QuestionSetCollectionView();
     }
     return Gooseberry.questionSetCollectionView.render();
@@ -59,6 +72,22 @@ Router = (function(_super) {
       Gooseberry.questionSetView = new QuestionSetView();
     }
     return Gooseberry.questionSetView.fetchAndRender(name);
+  };
+
+  Router.prototype.newQuestionSet = function(name) {
+    var questionSet;
+    questionSet = new QuestionSet({
+      _id: name.toUpperCase()
+    });
+    return questionSet.save({
+      questions: []
+    }, {
+      success: function() {
+        return Gooseberry.router.navigate("question_set/" + name + "/edit", {
+          trigger: true
+        });
+      }
+    });
   };
 
   Router.prototype.editQuestionSet = function(name) {

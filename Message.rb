@@ -9,6 +9,26 @@ class Message
     @text = clean(options["text"]) if options["text"]# The message content
   end
 
+  def process
+    set_most_recent_state
+    return unless process_triggers
+    set_questions
+    process_answer
+    result = send_next_message
+    # TODO check result to make sure message was sent before saving state
+    complete_action if complete?
+    save_state
+    return result
+  end
+
+  def complete_action
+    complete_action_string = QuestionSets.get_question_set(@state["question_set"])["complete action"]
+    if complete_action_string
+      message = self
+      eval complete_action_string
+    end
+  end
+
   def clean(text)
     if ! text.valid_encoding?
       text.encode!("US-ASCII", :invalid=>:replace, :replace=>"?").encode('US-ASCII')
@@ -54,7 +74,6 @@ class Message
 
 
   def process_triggers
-    puts @state
     case @text
       when /^Start (.+)/i
         question_set_name = $1.upcase
@@ -67,12 +86,11 @@ class Message
         elsif question_set_name != @state["question_set"]
           @state = get_state_for_user_with_question_set(question_set_name)
           if @state.nil?
-            new_state
+            new_state(question_set_name)
           end
-          puts @state
         # Else create a new state
         else
-          new_state
+          new_state(question_set_name)
         end
 
       when /^Reset$/i
@@ -81,7 +99,7 @@ class Message
         if @state["question_set"].nil?
           puts "No question set loaded."
           return false
-        elsif @state["complete"]
+        elsif complete?
           puts "Question set complete - nothing left to do."
           return false
         end
@@ -89,9 +107,10 @@ class Message
     true
   end
 
-  def new_state
+  def new_state(question_set_name)
     @state = default_empty_state
     @state["question_set"] = question_set_name
+    @state["current_question_index"] = nil
   end
 
   def reset_state
@@ -100,11 +119,16 @@ class Message
     @state["complete"] = false
   end
 
+  def new_state?
+    @state["current_question_index"].nil?
+  end
+
   def process_answer
     @validation_message = nil
     @current_question_index = -1
 
-    if @state["current_question_index"]
+    if not new_state?
+
       @current_question_index = @state["current_question_index"]
       current_question = @questions[@current_question_index]
 
@@ -153,15 +177,35 @@ class Message
 
       @state["current_question_index"] = @current_question_index
       message = @questions[@current_question_index]["text"]
-      message = "#{@validation_message}, try again: #{message}" if @validation_message
+      message = "#{@validation_message} #{message}" if @validation_message
     else
       @state["current_question_index"] = nil
       # Check for a complete message, or just use the default
-      message = QuestionSets.get_question_set(@state["question_set"])["complete message"] || "#{@state["question_set"]} is complete - thanks."
+      complete_message = QuestionSets.get_question_set(@state["question_set"])["complete message"]
+
+      message = if complete_message
+        evaluate_complete_message(complete_message)
+      else
+        "#{@state["question_set"]} is complete - thanks."
+      end
+
       @state["complete"] = true
     end
 
     send_message(@from,message)
+  end
+
+  def evaluate_complete_message(complete_message)
+    # create a string with all of the results set as variables names so that it can be eval'd and the variables used
+    sets_results_as_variables = @state["results"].find_all{|result|
+      result["valid"] == true
+    }.map{|result|
+      if result["question_name"]
+        "#{result["question_name"]} = \"#{result["answer"]}\""
+      end
+    }.compact.join(";")
+
+    eval "#{sets_results_as_variables}; \"#{complete_message}\""
   end
 
   def save_state
@@ -193,18 +237,20 @@ class Message
     @state["complete"] == true
   end
 
-  def process
-    set_most_recent_state
-    return unless process_triggers
-    set_questions
-    process_answer
-    result = send_next_message
-    # TODO check result to make sure message was sent before saving state
-    puts "SAVING"
-    puts @state
-    save_state
-    return result
+  def from
+    @from
   end
+
+  def result_for_question_name(question_name)
+    puts question_name
+    @state["results"].find_all{|result|
+      (result["text"] == question_name or result["question_name"] == question_name) and result["valid"] == true
+      (result["text"] == question_name or result["question_name"] == question_name) and result["valid"] == true
+    }.max_by{|result|
+      result["datetime"]
+    }["answer"]
+  end
+
 
 end
 
