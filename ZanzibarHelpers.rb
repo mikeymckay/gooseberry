@@ -227,10 +227,15 @@ class ZanzibarHelpers
     end
   end
 
+  def self.clean_number(number)
+    number.gsub(/\D/, '').gsub(/^0/,"").gsub(/^+255/,"")
+  end
 
   def self.health_facility_for_number(number)
     # Get just the numbers, ignore leading zeroes
-    number = number.gsub(/\D/, '').gsub(/^0/,"").gsub(/^+255/,"")
+    #
+
+    number = self.clean_number(number)
 
     facility_district = nil
     facility = nil
@@ -239,7 +244,7 @@ class ZanzibarHelpers
     facilityHierarchy.each do |district,facilityData|
       break if facility_district and facility
       facilityData.each do |data|
-        if data["mobile_numbers"].map{|num| num.gsub(/\D/,'').gsub(/^0/,"") }.include? number
+        if data["mobile_numbers"].map{|num| self.clean_number(num) }.include? number
           facility_district = district
           facility = data["facility"]
           break
