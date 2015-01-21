@@ -11,6 +11,8 @@ class Hash
   end
 end
 
+$zanzibar_couchdb = CouchRest.database("http://localhost:5984/zanzibar")
+
 class ZanzibarHelpers
   def self.error_message_unless_match(name,list)
     return nil if list.include? name
@@ -19,9 +21,7 @@ class ZanzibarHelpers
   end
 
   def self.shehia_list 
-    @db = CouchRest.database("http://localhost:5984/zanzibar")
-    #@db = CouchRest.database("http://coconut.zmcp.org:5984/zanzibar")
-    @db.get("Geo Hierarchy")["hierarchy"].leaves.flatten 
+    $zanzibar_couchdb.get("Geo Hierarchy")["hierarchy"].leaves.flatten 
   end 
 
   def self.error_message_unless_valid_shehia(shehia)
@@ -72,6 +72,110 @@ class ZanzibarHelpers
     end
   end
 
+  def self.year_week_format_match(text)
+    # 4 numbers followed by at least one non-number followed by 1-2 numbers, e.g. 2013 12
+    text.match(/^(\d{4})[^\d]+(\d{1,2})$/)
+  end
+
+  def self.extract_year_week_from_match(match)
+    match.captures.map{|number|number.to_i}
+  end
+
+  def self.extract_year_week(text)
+    self.extract_year_week_from_match ZanzibarHelpers.year_week_format_match(text)
+  end
+
+  def self.error_message_unless_year_week_on_or_before_today(text)
+    correct_format = ZanzibarHelpers.year_week_format_match(text)
+
+    return "Invalid format." unless correct_format
+    
+    (year,week) = self.extract_year_week_from_match(correct_format)
+
+    maximum_number_of_weeks_in_any_year = 52
+    start_year = 2014
+
+    if (year < start_year or year > Date.today.year)
+      "#{year} is not a valid year, must be a number between 2014 and #{Date.today.year}."
+    elsif (week > maximum_number_of_weeks_in_any_year)
+      "Week, #{week}, must be less than #{maximum_number_of_weeks_in_any_year}."
+    elsif (Date.commercial(year,week) > Date.today)
+      "Year week, #{year} #{week}, must be the same or earlier than today's year and week: #{Date.today.year} #{Date.today.cweek}."
+    else
+      nil
+    end
+  end
+
+  def self.opd_format_match(text)
+    text.match(/^(\d+)[^\d]+(\d+)[^\d]+(\d+)$/)
+  end
+
+  def self.extract_total_visits_malaria_positive_malaria_negative_from_match(match)
+    match.captures.map{|number|number.to_i}
+  end
+
+  def self.extract_total_visits_malaria_positive_malaria_negative(text)
+    self.extract_total_visits_malaria_positive_malaria_negative_from_match self.opd_format_match(text)
+  end
+
+  def self.error_message_unless_valid_opd(text)
+    correct_format = self.opd_format_match(text)
+
+    return "Invalid format, expecting 3 numbers separated by spaces." unless correct_format
+
+    (total_visits, malaria_positive, malaria_negative) = self.extract_total_visits_malaria_positive_malaria_negative_from_match correct_format
+
+    total_visits_limit = 1000
+
+    if total_visits.nil? or malaria_positive.nil? or malaria_negative.nil?
+      "At least three numbers are required."
+    elsif total_visits > total_visits_limit
+      "Total visits '#{total_visits}' is not valid, must be less than #{total_visits_limit}"
+    elsif malaria_positive + malaria_negative > total_visits
+      "The sum of malaria positive and malaria negative (#{malaria_positive}+#{malaria_negative} = #{malaria_positive+malaria_negative}) must not exceed the total visits (#{total_visits})."
+    else
+      nil
+    end
+  end
+
+  def self.opd_complete_message(message)
+    (year,week) = ZanzibarHelpers.extract_year_week(message.result_for_question_name("year_week"))
+    (under_5_total, under_5_malaria_positive, under_5_malaria_negative) = ZanzibarHelpers.extract_total_visits_malaria_positive_malaria_negative(message.result_for_question_name "under_5")
+    (over_5_total, over_5_malaria_positive, over_5_malaria_negative) = ZanzibarHelpers.extract_total_visits_malaria_positive_malaria_negative(message.result_for_question_name "over_5")
+    facility= ZanzibarHelpers.health_facility_name_for_number(message.from)
+
+    "Thanks. #{facility}, y#{year}, w#{week}: <5: [#{under_5_total}, +#{under_5_malaria_positive}, -#{under_5_malaria_negative} ] >5: [#{over_5_total} , +#{over_5_malaria_positive}, -#{over_5_malaria_negative}]"
+
+  end
+
+
+  def self.weekly_report_from_results(message)
+    (year,week) = ZanzibarHelpers.extract_year_week(message.result_for_question_name("year_week"))
+    (under_5_total, under_5_malaria_positive, under_5_malaria_negative) = ZanzibarHelpers.extract_total_visits_malaria_positive_malaria_negative(message.result_for_question_name "under_5")
+    (over_5_total, over_5_malaria_positive, over_5_malaria_negative) = ZanzibarHelpers.extract_total_visits_malaria_positive_malaria_negative(message.result_for_question_name "over_5")
+    facility_information = ZanzibarHelpers.health_facility_for_number(message.from)
+    {
+      "type" => "weekly_report",
+      "source" => "gooseberry sms",
+      "source_phone" => message.from,
+      "date" => Time.now.strftime("%Y-%m-%d %H:%M:%S"),
+      "year" => year,
+      "week" => week,
+      "under 5 opd" => under_5_total,
+      "under 5 positive" => under_5_malaria_positive,
+      "under 5 negative" => under_5_malaria_negative,
+      "over 5 opd" => over_5_total,
+      "over 5 positive" => over_5_malaria_positive,
+      "over 5 negative" => over_5_malaria_negative,
+      "hf" => facility_information["facility"],
+      "facility_district" => facility_information["facility_district"],
+    }
+  end
+
+  def self.post_weekly_report(message)
+    puts $zanzibar_couchdb.save_doc(weekly_report_from_results(message))
+  end
+
 # Convert a number to a more compact and easy to transcribe string
   def self.to_base(number,to_base = 30)
     # we are taking out the following letters B, I, O, Q, S, Z because the might be mistaken for 8, 1, 0, 0, 5, 2 respectively
@@ -93,6 +197,8 @@ class ZanzibarHelpers
   end
 
   def self.notification_from_results(message)
+    facility_information = ZanzibarHelpers.health_facility_for_number(message.from)
+    
     {
       "type" => "new_case",
       "source" => "gooseberry sms",
@@ -102,14 +208,49 @@ class ZanzibarHelpers
       "name" => message.result_for_question_name("name"),
       "positive_test_date" => message.result_for_question_name("positive_test_date"),
       "shehia" => message.result_for_question_name("shehia"),
-      "hf" => "TODO",
-      "facility_district" => "TODO",
+      "hf" => facility_information["facility"],
+      "facility_district" => facility_information["facility_district"],
       "hasCaseNotification" => false
     } 
   end
 
   def self.post_case(message)
-    puts notification_from_results(message)
+    puts $zanzibar_couchdb.save_doc(notification_from_results(message))
+  end
+
+  def self.health_facility_name_for_number(number)
+    health_facility = ZanzibarHelpers.health_facility_for_number(number)
+    if health_facility
+      health_facility["facility"]
+    else
+      nil
+    end
+  end
+
+
+  def self.health_facility_for_number(number)
+    # Get just the numbers, ignore leading zeroes
+    number = number.gsub(/\D/, '').gsub(/^0/,"").gsub(/^+255/,"")
+
+    facility_district = nil
+    facility = nil
+
+    facilityHierarchy = JSON.parse(RestClient.get "#{$zanzibar_couchdb}/Facility%20Hierarchy", {:accept => :json})["hierarchy"]
+    facilityHierarchy.each do |district,facilityData|
+      break if facility_district and facility
+      facilityData.each do |data|
+        if data["mobile_numbers"].map{|num| num.gsub(/\D/,'').gsub(/^0/,"") }.include? number
+          facility_district = district
+          facility = data["facility"]
+          break
+        end
+      end
+    end
+
+    return {
+      "facility" => facility,
+      "facility_district" => facility_district
+    }
   end
 
 end

@@ -267,7 +267,8 @@ QuestionSetCollectionView = (function(_super) {
   QuestionSetCollectionView.prototype.interact = function(event) {
     var name, target;
     name = $(event.target).closest("tr").attr("data-name");
-    target = "http://gooseberry.tangerinecentral.org/22340/incoming";
+    console.log(document.location.hostname);
+    target = document.location.hostname === "localhost" ? "http://localhost:9393/22340/incoming" : "http://gooseberry.tangerinecentral.org/22340/incoming";
     return Gooseberry.router.navigate("interact/" + name + "?target=" + target, {
       trigger: true
     });

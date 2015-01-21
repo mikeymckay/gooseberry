@@ -226,8 +226,11 @@ class QuestionSetCollectionView extends Backbone.View
 
   interact: (event) =>
     name = $(event.target).closest("tr").attr("data-name")
-    #target = "http://localhost:9393/22340/incoming"
-    target = "http://gooseberry.tangerinecentral.org/22340/incoming"
+    console.log document.location.hostname
+    target = if document.location.hostname is "localhost"
+      "http://localhost:9393/22340/incoming"
+    else
+      "http://gooseberry.tangerinecentral.org/22340/incoming"
     Gooseberry.router.navigate "interact/#{name}?target=#{target}", {trigger: true}
 
   cancel: ->

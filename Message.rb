@@ -25,6 +25,8 @@ class Message
     complete_action_string = QuestionSets.get_question_set(@state["question_set"])["complete action"]
     if complete_action_string
       message = self
+      puts "***********"
+      puts complete_action_string
       eval complete_action_string
     end
   end
@@ -72,37 +74,77 @@ class Message
 
   end
 
+  def look_for_start_triggers(text)
+    result = true
+    if @text.match(/ /) # configured trigger words don't have spaces
+      # default trigger uses word start followed by question set id
+      if @text.match(/^Start (.+)/i)
+        result = process_start_triggers($1)
+      end
+    else
+      # check for a match on configured trigger words
+      first_matched_trigger_word = $db.view("#{$database_name}/trigger_words", {
+        "key" => @text.upcase,
+        "include_docs" => false
+      })['rows'][0]
 
-  def process_triggers
-    case @text
-      when /^Start (.+)/i
-        question_set_name = $1.upcase
+      if first_matched_trigger_word
+        result = process_start_triggers(first_matched_trigger_word["value"])
+      end
+    end
 
-        if QuestionSets.get_question_set(question_set_name).nil?
-          closest_match = FuzzyMatch.new(QuestionSets.all).find(question_set_name)
-          send_message(@from, "#{question_set_name} is not a valid question set - did you mean #{closest_match}? Please try again.") unless QuestionSets.get_question_set(question_set_name)
+    return false if result == false
+  end
+
+  def process_start_triggers(question_set_name)
+    question_set = QuestionSets.get_question_set(question_set_name)
+    if question_set.nil?
+      closest_match = FuzzyMatch.new(QuestionSets.all).find(question_set_name)
+      send_message(@from, "#{question_set_name} is not a valid question set - did you mean #{closest_match}? Please try again.") unless QuestionSets.get_question_set(question_set_name)
+      return false
+    else
+      # Allows us to run some code to see if we should proceed
+      # For example - only send if the number is known
+      pre_run_requirement = question_set["pre_run_requirement"]
+      puts "AA"
+      if pre_run_requirement
+        puts pre_run_requirement
+        pre_run_requirement_message = eval pre_run_requirement
+        puts pre_run_requirement_message
+        if pre_run_requirement_message
+          send_message(@from,pre_run_requirement_message)
           return false
-        # If the question_set to start isn't the most recently used state, get the right one or create a new one
-        elsif question_set_name != @state["question_set"]
-          @state = get_state_for_user_with_question_set(question_set_name)
-          if @state.nil?
-            new_state(question_set_name)
-          end
-        # Else create a new state
-        else
+        end
+      end
+
+      # If the question_set to start isn't the most recently used state, get the right one or create a new one
+      if question_set_name != @state["question_set"]
+        @state = get_state_for_user_with_question_set(question_set_name)
+        if @state.nil?
           new_state(question_set_name)
         end
-
-      when /^Reset$/i
-        reset_state
+      # Else create a new state
       else
-        if @state["question_set"].nil?
-          puts "No question set loaded."
-          return false
-        elsif complete?
-          puts "Question set complete - nothing left to do."
-          return false
-        end
+        new_state(question_set_name)
+      end
+    end
+
+  end
+
+  def process_triggers
+    result = look_for_start_triggers @text
+    return if result == false
+
+    if @text.match(/^$/i)
+      reset_state
+    else
+      if @state["question_set"].nil?
+        puts "No question set loaded."
+        return false
+      elsif complete?
+        puts "Question set complete - nothing left to do."
+        return false
+      end
     end
     true
   end
@@ -138,6 +180,8 @@ class Message
       end
 
       @validation_message = if current_question["validation"]
+        puts  "answer = '#{answer.sub(/'/,'') if answer}';#{current_question["validation"]}"
+
         eval "answer = '#{answer.sub(/'/,'') if answer}';#{current_question["validation"]}"
       end
 
@@ -177,6 +221,7 @@ class Message
 
       @state["current_question_index"] = @current_question_index
       message = @questions[@current_question_index]["text"]
+      message = eval "\"#{message}\"" # Allows you to dynamically change the text of the message
       message = "#{@validation_message} #{message}" if @validation_message
     else
       @state["current_question_index"] = nil
@@ -205,6 +250,7 @@ class Message
       end
     }.compact.join(";")
 
+    puts "#{sets_results_as_variables}; \"#{complete_message}\""
     eval "#{sets_results_as_variables}; \"#{complete_message}\""
   end
 
