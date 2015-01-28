@@ -191,9 +191,15 @@ class ZanzibarHelpers
     results
   end
 
-  def self.new_case_id()
+  def self.new_case_id
     # Milliseconds (not quite) since 2014,1,1 base 30 encoded
     ZanzibarHelpers.to_base((Time.now - Time.new(2014,1,1))*1000)
+  end
+
+  def self.create_and_save_case_id(message)
+    case_id = self.new_case_id
+    message.add_data("case_id" => case_id)
+    case_id
   end
 
   def self.notification_from_results(message)
@@ -203,7 +209,7 @@ class ZanzibarHelpers
       "type" => "new_case",
       "source" => "gooseberry sms",
       "source_phone" => message.from,
-      "caseid" => ZanzibarHelpers.new_case_id,
+      "caseid" => message.get_data("case_id"),
       "date" => Time.now.strftime("%Y-%m-%d %H:%M:%S"),
       "name" => message.result_for_question_name("name"),
       "positive_test_date" => message.result_for_question_name("positive_test_date"),

@@ -14,13 +14,20 @@ class Message
   end
 
   def process
+    puts "set_most_recent_state"
     set_most_recent_state
+    puts "return unless process_triggers"
     return unless process_triggers
+    puts "set_questions"
     set_questions
+    puts "process_answer"
     process_answer
+    puts "result = send_next_message"
     result = send_next_message
     # TODO check result to make sure message was sent before saving state
+    puts "complete_action if complete?"
     complete_action if complete?
+    puts "save_state"
     save_state
     return result
   end
@@ -251,6 +258,14 @@ class Message
     eval "#{sets_results_as_variables}; \"#{complete_message}\""
   end
 
+  def add_data(data)
+    @state.merge! data
+  end
+
+  def get_data(property)
+    @state[property]
+  end
+
   def save_state
     @state["updated_at"] = Time.now.to_s
     @state = $db.save_doc(@state)
@@ -258,7 +273,7 @@ class Message
 
   def send_message(to,message)
     if @from != "web"
-      puts $gateway.send_message(
+      puts "Response from SMS Gateway: " + $gateway.send_message(
         to,
         message,
         {

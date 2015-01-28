@@ -4,22 +4,7 @@ def incoming(params)
   message = Message.new(params)
   result = message.process
 
-  if params["plain"] and params["plain"] == "true"
-    puts "***********"
-    puts result
-    return result
-  end
-
-  return "
-    <h1>#{result}</h1>
-    SMS:<br/> 
-    <textarea style='height:200px;width:300px;'></textarea>
-    <button type='button' onClick='document.location=document.location.href.replace(/text=.*/,\"text=\" + document.getElementsByTagName(\"textarea\")[0].value)'>Send</button>
-    <br/>
-    <br/>
-    <br/>
-    <a href='/'>Home</a>
-  "
+  return result
 end
 
 get "/#{$passwords_and_config["phone_number"]}/incoming" do
