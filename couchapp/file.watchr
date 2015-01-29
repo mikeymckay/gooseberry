@@ -46,8 +46,6 @@ end
 
 push_and_test()
 
-
-
 #watch( '.html$') {|match_data|
 #  push_and_test()
 #}
@@ -64,14 +62,14 @@ watch( '(.*\.coffee$)' ) {|match_data|
   puts "\n"
   #result = `coffee --bare --compile #{match_data[0]} 2>&1`
   puts file_path = match_data[0]
-  if file_path.match(/_attachments/)
+  result = if file_path.match(/_attachments/)
     file_path.gsub!(/_attachments\//,"")
-    puts file_path
-    result = `cd /var/www/gooseberry/couchapp/_attachments; coffee --map --bare --compile #{file_path} 2>&1; cd -`
+    `cd #{Dir.pwd}/_attachments; coffee --map --bare --compile #{file_path} 2>&1; cd -`
   else
-    result = `coffee --map --bare --compile #{file_path} 2>&1`
+    `coffee --map --bare --compile #{file_path} 2>&1`
   end
   puts result
+
   error = false
   result.split('\n').each{|line|
     if line.match(/error/)  then

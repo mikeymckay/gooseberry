@@ -101,24 +101,28 @@ QuestionSetResults = (function(_super) {
   __extends(QuestionSetResults, _super);
 
   function QuestionSetResults() {
+    this.updateDate = __bind(this.updateDate, this);
     this.analyze = __bind(this.analyze, this);
     this.renderTableContents = __bind(this.renderTableContents, this);
     this.renderTableStructure = __bind(this.renderTableStructure, this);
+    this.fetchAndRender = __bind(this.fetchAndRender, this);
     return QuestionSetResults.__super__.constructor.apply(this, arguments);
   }
 
   QuestionSetResults.prototype.el = '#content';
 
-  QuestionSetResults.prototype.fetchAndRender = function(name) {
-    this.$el.html("<h1>" + name + "</h1> <div id='stats'></div>");
+  QuestionSetResults.prototype.fetchAndRender = function() {
+    this.$el.html("<h1>" + this.name + "</h1> <input id='startDate' type='date' value='" + this.startDate + "'></input> <input id='endDate' type='date' value='" + this.endDate + "'></input> <div id='stats'></div>");
     this.questionSet = new QuestionSet({
-      _id: name
+      _id: this.name
     });
     return this.questionSet.fetch({
       success: (function(_this) {
         return function() {
           _this.renderTableStructure();
-          return _this.questionSet.fetchResults({
+          return _this.questionSet.fetchResultsForDates({
+            startDate: _this.startDate,
+            endDate: _this.endDate,
             success: function(results) {
               _this.renderTableContents(results);
               return _this.analyze();
@@ -165,25 +169,19 @@ QuestionSetResults = (function(_super) {
       include_docs: false,
       success: (function(_this) {
         return function(results) {
-          var completeResults, completionDurations, fastestCompletion, incompletePercentage, incompleteResults, meanTimeToComplete, medianTimeToComplete, mistakeCount, mistakePercentage, mistakes, requiredIndices, slowestCompletion, totalResults;
+          var completeResults, completionDurations, fastestCompletion, incompletePercentage, incompleteResults, meanTimeToComplete, medianTimeToComplete, mistakeCount, mistakePercentage, mistakes, slowestCompletion, totalResults;
           completionDurations = [];
           incompleteResults = [];
           completeResults = 0;
           mistakes = [];
-          requiredIndices = _this.questionSet.get("required_indices");
-          if (requiredIndices != null) {
-            requiredIndices = JSON.parse(requiredIndices);
-          }
           _(_(results.rows).pluck("value")).each(function(result) {
-            if (requiredIndices != null) {
-              if (_(requiredIndices).difference(result.validIndices).length === 0) {
-                completeResults += 1;
-                if (result.updatedAt && result.firstResultTime) {
-                  completionDurations.push(moment(result.updatedAt).diff(moment(result.firstResultTime), "seconds"));
-                }
-              } else {
-                incompleteResults.push(result["from"]);
+            if (result.complete === true) {
+              completeResults += 1;
+              if (result.updatedAt && result.firstResultTime) {
+                completionDurations.push(moment(result.updatedAt).diff(moment(result.firstResultTime), "seconds"));
               }
+            } else {
+              incompleteResults.push(result["from"]);
             }
             if (!_(result.invalidResult).isEmpty()) {
               return mistakes.push(result.invalidResult);
@@ -195,18 +193,16 @@ QuestionSetResults = (function(_super) {
               return mistakeCount += 1;
             });
           });
-          if (requiredIndices) {
-            totalResults = completeResults + incompleteResults.length;
-            incompletePercentage = "" + (Math.floor(incompleteResults.length / totalResults * 100)) + " %";
-            mistakePercentage = "" + (Math.floor(100 * mistakeCount / (totalResults * requiredIndices.length))) + " %";
-          }
+          totalResults = completeResults + incompleteResults.length;
+          incompletePercentage = "" + (Math.floor(incompleteResults.length / totalResults * 100)) + " %";
+          mistakePercentage = "" + (Math.floor(100 * mistakeCount / totalResults)) + " %";
           if (completionDurations.length > 0) {
             fastestCompletion = moment.duration(_(completionDurations).min(), "seconds").humanize();
             slowestCompletion = moment.duration(_(completionDurations).max(), "seconds").humanize();
             medianTimeToComplete = moment.duration(math.median(completionDurations), "seconds").humanize();
             meanTimeToComplete = moment.duration(math.mean(completionDurations), "seconds").humanize();
           }
-          return _this.$el.find("#stats").html("<ul> <li>Median Time To Complete: " + medianTimeToComplete + " (Fastest: " + fastestCompletion + " - Slowest: " + slowestCompletion + ") <!-- <li>Mean Time To Complete: " + meanTimeToComplete + " --> <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>" + incompleteResults.length + "</button> (" + incompletePercentage + ") <a href='http://gooseberry.tangerinecentral.org/send_reminders/" + (_this.questionSet.name()) + "/240'>Send reminder SMS</a> <li>Total number of validation failures: <button id='toggleMistakes' type='button'>" + mistakeCount + "</button> (" + mistakePercentage + ") </ul> <div id='incompleteResultsDetails' style='display:none'> <h2>Incomplete Results</h2> <ul> " + (_(incompleteResults).map(function(number) {
+          return _this.$el.find("#stats").html("<ul> <li>Median Time To Complete: " + medianTimeToComplete + " (Fastest: " + fastestCompletion + " - Slowest: " + slowestCompletion + ") <!-- <li>Mean Time To Complete: " + meanTimeToComplete + " --> <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>" + incompleteResults.length + "</button> (" + incompletePercentage + ") <!--<a href='http://gooseberry.tangerinecentral.org/send_reminders/" + (_this.questionSet.name()) + "/240'>Send reminder SMS</a>--> <li>Total number of validation failures: <button id='toggleMistakes' type='button'>" + mistakeCount + "</button> (" + mistakePercentage + ") </ul> <div id='incompleteResultsDetails' style='display:none'> <h2>Incomplete Results</h2> <ul> " + (_(incompleteResults).map(function(number) {
             return "<li>" + number;
           }).join("")) + " </ul> </div> <div id='mistakeDetails' style='display:none'> <h2>Validation Failures</h2> <table> <thead> <td>Question</td> <td>Answer</td> </thead> <tbody> " + (_(mistakes).map(function(mistake) {
             return _(mistake).map(function(value, index) {
@@ -226,10 +222,18 @@ QuestionSetResults = (function(_super) {
     return $("#mistakeDetails").toggle();
   };
 
+  QuestionSetResults.prototype.updateDate = function() {
+    return Gooseberry.router.navigate("question_set/" + this.name + "/results/" + ($("#startDate").val()) + "/" + ($("#endDate").val()), {
+      trigger: true
+    });
+  };
+
   QuestionSetResults.prototype.events = {
     "click button#save": "save",
     "click button#toggleMistakes": "toggleMistakes",
-    "click button#toggleIncompletes": "toggleIncompletes"
+    "click button#toggleIncompletes": "toggleIncompletes",
+    "change #startDate": "updateDate",
+    "change #endDate": "updateDate"
   };
 
   return QuestionSetResults;

@@ -57,17 +57,21 @@ class QuestionSetEdit extends Backbone.View
 class QuestionSetResults extends Backbone.View
   el: '#content'
 
-  fetchAndRender: (name) ->
+  fetchAndRender: () =>
     @$el.html "
-      <h1>#{name}</h1>
+      <h1>#{@name}</h1>
+      <input id='startDate' type='date' value='#{@startDate}'></input>
+      <input id='endDate' type='date' value='#{@endDate}'></input>
       <div id='stats'></div>
     "
     @questionSet = new QuestionSet
-      _id: name
+      _id: @name
     @questionSet.fetch
       success: =>
         @renderTableStructure()
-        @questionSet.fetchResults
+        @questionSet.fetchResultsForDates
+          startDate: @startDate
+          endDate: @endDate
           success: (results) =>
             @renderTableContents(results)
             @analyze()
@@ -121,17 +125,14 @@ class QuestionSetResults extends Backbone.View
         incompleteResults = []
         completeResults = 0
         mistakes = []
-        requiredIndices = @questionSet.get "required_indices"
-        requiredIndices = JSON.parse requiredIndices if requiredIndices?
         _(_(results.rows).pluck("value")).each (result) =>
 
-          if requiredIndices?
-            if _(requiredIndices).difference(result.validIndices).length is 0
-              completeResults += 1
-              if result.updatedAt and result.firstResultTime
-                completionDurations.push moment(result.updatedAt).diff(moment(result.firstResultTime), "seconds")
-            else
-              incompleteResults.push result["from"]
+          if result.complete is true
+            completeResults += 1
+            if result.updatedAt and result.firstResultTime
+              completionDurations.push moment(result.updatedAt).diff(moment(result.firstResultTime), "seconds")
+          else
+            incompleteResults.push result["from"]
 
           mistakes.push(result.invalidResult) unless _(result.invalidResult).isEmpty()
 
@@ -141,10 +142,9 @@ class QuestionSetResults extends Backbone.View
             mistakeCount += 1
 
 
-        if requiredIndices
-          totalResults = completeResults + incompleteResults.length
-          incompletePercentage = "#{Math.floor(incompleteResults.length/totalResults*100)} %"
-          mistakePercentage = "#{Math.floor(100 * mistakeCount/(totalResults*requiredIndices.length))} %"
+        totalResults = completeResults + incompleteResults.length
+        incompletePercentage = "#{Math.floor(incompleteResults.length/totalResults*100)} %"
+        mistakePercentage = "#{Math.floor(100 * mistakeCount/(totalResults))} %"
 
         if completionDurations.length > 0
           fastestCompletion = moment.duration(_(completionDurations).min(), "seconds").humanize()
@@ -158,7 +158,7 @@ class QuestionSetResults extends Backbone.View
             <!--
             <li>Mean Time To Complete: #{meanTimeToComplete}
             -->
-            <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>#{incompleteResults.length}</button> (#{incompletePercentage}) <a href='http://gooseberry.tangerinecentral.org/send_reminders/#{@questionSet.name()}/240'>Send reminder SMS</a>
+            <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>#{incompleteResults.length}</button> (#{incompletePercentage}) <!--<a href='http://gooseberry.tangerinecentral.org/send_reminders/#{@questionSet.name()}/240'>Send reminder SMS</a>-->
             <li>Total number of validation failures: <button id='toggleMistakes' type='button'>#{mistakeCount}</button> (#{mistakePercentage})
           </ul>
           <div id='incompleteResultsDetails' style='display:none'>
@@ -201,10 +201,16 @@ class QuestionSetResults extends Backbone.View
   toggleIncompletes: -> $("#incompleteResultsDetails").toggle()
   toggleMistakes: -> $("#mistakeDetails").toggle()
 
+  updateDate: =>
+    Gooseberry.router.navigate "question_set/#{@name}/results/#{$("#startDate").val()}/#{$("#endDate").val()}", {trigger: true}
+    
+
   events:
     "click button#save": "save"
     "click button#toggleMistakes": "toggleMistakes"
     "click button#toggleIncompletes": "toggleIncompletes"
+    "change #startDate": "updateDate"
+    "change #endDate": "updateDate"
 
 
 

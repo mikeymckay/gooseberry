@@ -17,6 +17,7 @@ Router = (function(_super) {
     "question_set/:name/new": "newQuestionSet",
     "question_set/:name/edit": "editQuestionSet",
     "question_set/:name/results": "questionSetResults",
+    "question_set/:name/results/:startDate/:endDate": "questionSetResults",
     "interact/:name": "interact",
     "log/:phoneNumber/:questionSet": "log",
     "analyze/:questionSet": "analyze",
@@ -97,11 +98,20 @@ Router = (function(_super) {
     return Gooseberry.questionSetEdit.fetchAndRender(name);
   };
 
-  Router.prototype.questionSetResults = function(name) {
+  Router.prototype.questionSetResults = function(name, startDate, endDate) {
+    if (startDate == null) {
+      startDate = moment().subtract(1, "week").format("YYYY-MM-DD");
+    }
+    if (endDate == null) {
+      endDate = moment().format("YYYY-MM-DD");
+    }
     if (!Gooseberry.questionSetResults) {
       Gooseberry.questionSetResults = new QuestionSetResults();
     }
-    return Gooseberry.questionSetResults.fetchAndRender(name);
+    Gooseberry.questionSetResults.startDate = startDate;
+    Gooseberry.questionSetResults.endDate = endDate;
+    Gooseberry.questionSetResults.name = name;
+    return Gooseberry.questionSetResults.fetchAndRender();
   };
 
   Router.prototype.userLoggedIn = function(callback) {
