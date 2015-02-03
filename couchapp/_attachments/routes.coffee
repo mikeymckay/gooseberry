@@ -6,6 +6,7 @@ class Router extends Backbone.Router
     "question_set/:name/new": "newQuestionSet"
     "question_set/:name/edit": "editQuestionSet"
     "question_set/:name/results": "questionSetResults"
+    "question_set/:name/results/:startDate/:endDate": "questionSetResults"
     "interact/:name": "interact"
     "log/:phoneNumber/:questionSet": "log"
     "analyze/:questionSet": "analyze"
@@ -67,9 +68,12 @@ class Router extends Backbone.Router
     Gooseberry.questionSetEdit = new QuestionSetEdit() unless Gooseberry.questionSetEdit
     Gooseberry.questionSetEdit.fetchAndRender(name)
 
-  questionSetResults: (name) ->
+  questionSetResults: (name,startDate = moment().subtract(1,"week").format("YYYY-MM-DD"),endDate = moment().format("YYYY-MM-DD")) ->
     Gooseberry.questionSetResults = new QuestionSetResults() unless Gooseberry.questionSetResults
-    Gooseberry.questionSetResults.fetchAndRender(name)
+    Gooseberry.questionSetResults.startDate = startDate
+    Gooseberry.questionSetResults.endDate = endDate
+    Gooseberry.questionSetResults.name = name
+    Gooseberry.questionSetResults.fetchAndRender()
 
   userLoggedIn: (callback) ->
     User.isAuthenticated

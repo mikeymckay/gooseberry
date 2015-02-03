@@ -10,7 +10,8 @@ QuestionSet = (function(_super) {
   function QuestionSet() {
     this.questionStringsWithNumberAndDate = __bind(this.questionStringsWithNumberAndDate, this);
     this.questionStrings = __bind(this.questionStrings, this);
-    this.fetchResults = __bind(this.fetchResults, this);
+    this.fetchAllResults = __bind(this.fetchAllResults, this);
+    this.fetchResultsForDates = __bind(this.fetchResultsForDates, this);
     this.name = __bind(this.name, this);
     return QuestionSet.__super__.constructor.apply(this, arguments);
   }
@@ -21,7 +22,20 @@ QuestionSet = (function(_super) {
     return this.id;
   };
 
-  QuestionSet.prototype.fetchResults = function(options) {
+  QuestionSet.prototype.fetchResultsForDates = function(options) {
+    return Gooseberry.view({
+      name: "results_by_question_set",
+      startkey: [this.id, options.startDate],
+      endkey: [this.id, moment(options.endDate).add(1, "day").format("YYYY-MM-DD")],
+      include_docs: false,
+      success: function(result) {
+        this.results = _.pluck(result.rows, "value");
+        return options.success(this.results);
+      }
+    });
+  };
+
+  QuestionSet.prototype.fetchAllResults = function(options) {
     return Gooseberry.view({
       name: "results_by_question_set",
       key: this.id,
