@@ -95,7 +95,7 @@ class QuestionSetResults extends Backbone.View
     @$el.find("tbody").html(
       _(results).map (result) => "
         <tr>
-          <td><a href='#log/#{result["from"]}/#{@questionSet.name()}'>#{result["from"]}</a></td>
+          <td><a href='#log/#{result["from"]}'>#{result["from"]}</a></td>
           <td>#{result["updated_at"]}</td>
           #{
             _([0..@questionSet.questionStrings().length-1]).map (index) ->

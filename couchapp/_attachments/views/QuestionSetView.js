@@ -143,7 +143,7 @@ QuestionSetResults = (function(_super) {
     this.$el.find("tbody").html(_(results).map((function(_this) {
       return function(result) {
         var _i, _ref, _results;
-        return "<tr> <td><a href='#log/" + result["from"] + "/" + (_this.questionSet.name()) + "'>" + result["from"] + "</a></td> <td>" + result["updated_at"] + "</td> " + (_((function() {
+        return "<tr> <td><a href='#log/" + result["from"] + "'>" + result["from"] + "</a></td> <td>" + result["updated_at"] + "</td> " + (_((function() {
           _results = [];
           for (var _i = 0, _ref = _this.questionSet.questionStrings().length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; 0 <= _ref ? _i++ : _i--){ _results.push(_i); }
           return _results;

@@ -202,9 +202,15 @@ class ZanzibarHelpers
     case_id
   end
 
+  def day_month_year_to_year_month_day(date)
+    (day,month,year) = ZanzibarHelpers.date_format(date).captures
+    "#{year}-#{month}-#{day}"
+  end
+
   def self.notification_from_results(message)
     facility_information = ZanzibarHelpers.health_facility_for_number(message.from)
-    
+    positive_test_date = day_month_year_to_year_month_day(message.result_for_question_name("positive_test_date"))
+
     {
       "type" => "new_case",
       "source" => "gooseberry sms",
@@ -212,7 +218,7 @@ class ZanzibarHelpers
       "caseid" => message.get_data("case_id"),
       "date" => Time.now.strftime("%Y-%m-%d %H:%M:%S"),
       "name" => message.result_for_question_name("name"),
-      "positive_test_date" => message.result_for_question_name("positive_test_date"),
+      "positive_test_date" => positive_test_date,
       "shehia" => message.result_for_question_name("shehia"),
       "hf" => facility_information["facility"],
       "facility_district" => facility_information["facility_district"],
