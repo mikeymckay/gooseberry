@@ -1,0 +1,19 @@
+[
+  // filenames matching these regexps will not be pushed to the database
+  // uncomment to activate; separate entries with ","
+  ".*~$",
+  ".*\\.swp$",
+  // ".*\\.bak$"
+  "Vagrantfile",
+  "features*",
+  "log",
+  ".*map\\.coffee$",
+  ".*map\\.map$",
+  "filters.*\\.coffee$",
+  "filters.*\\.map$",
+  "build_android_app",
+  "scripts",
+  "tests",
+  "node_modules",
+  "zanzibar-server"
+]

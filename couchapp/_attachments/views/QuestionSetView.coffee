@@ -233,10 +233,7 @@ class QuestionSetCollectionView extends Backbone.View
   interact: (event) =>
     name = $(event.target).closest("tr").attr("data-name")
     console.log document.location.hostname
-    target = if document.location.hostname is "localhost"
-      "http://localhost:9393/22340/incoming"
-    else
-      "http://gooseberry.tangerinecentral.org/22340/incoming"
+    target = Gooseberry.config.messageTarget
     Gooseberry.router.navigate "interact/#{name}?target=#{target}", {trigger: true}
 
   cancel: ->
@@ -333,7 +330,7 @@ class QuestionSetCollectionView extends Backbone.View
           </table>
         "
         questionSets.each (questionSet) ->
-          questionSet.fetchResults
+          questionSet.fetchAllResults
             success: (results) ->
               $("tr[data-name='#{questionSet.name()}'] td.number-of-results").html results.length
 

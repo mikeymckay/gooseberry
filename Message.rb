@@ -11,6 +11,21 @@ class Message
     elsif options["message"]
       clean options["message"]
     end
+
+    log_incoming_message()
+
+  end
+
+  def log_incoming_message
+    $db_log.save_doc ({
+      "type" => "incoming",
+      "to" => @to,
+      "from" => @from,
+      "message" => @text,
+      "time" => Time.now.strftime("%Y-%m-%d %H:%M:%S.%3N"),
+      "id" => @id,
+      "linkId" => @linkId
+    })
   end
 
   def process
@@ -271,9 +286,22 @@ class Message
     @state = $db.save_doc(@state)
   end
 
+  def log_sent_message(to,message,response)
+    $db_log.save_doc ({
+      "type" => "sent",
+      "to" => to,
+      "from" => @from,
+      "message" => message,
+      "time" => Time.now.strftime("%Y-%m-%d %H:%M:%S.%3N"),
+      "response" => response
+    })
+  end
+
   def send_message(to,message)
+
+    response = nil
     if @from != "web"
-      puts "Response from SMS Gateway: " + $gateway.send_message(
+      response = $gateway.send_message(
         to,
         message,
         {
@@ -282,8 +310,13 @@ class Message
         }
       )
     else # source was via web
-      "#{to}:#{message}"
+      response = "#{to}:#{message}"
     end
+
+    puts "Response from SMS Gateway: #{response}"
+    log_sent_message(to,message,response)
+    response
+
   end
 
   def set_questions

@@ -16,9 +16,11 @@ class QuestionSet extends Backbone.Model
   fetchAllResults: (options) =>
     Gooseberry.view
       name: "results_by_question_set"
-      key: @id
+      startkey: [@id]
+      endkey: [@id,{}]
       include_docs: false
       success: (result) ->
+        console.log result
         @results = _.pluck(result.rows, "value")
         options.success(@results)
 

@@ -8,7 +8,8 @@ class Router extends Backbone.Router
     "question_set/:name/results": "questionSetResults"
     "question_set/:name/results/:startDate/:endDate": "questionSetResults"
     "interact/:name": "interact"
-    "log/:phoneNumber/:questionSet": "log"
+    "raw/:phoneNumber/:questionSet": "viewRawResult"
+    "log/:phoneNumber": "log"
     "analyze/:questionSet": "analyze"
     '*invalidRoute' : 'showErrorPage'
 
@@ -19,13 +20,25 @@ class Router extends Backbone.Router
     Gooseberry.interactView.target = target
     Gooseberry.interactView.render()
 
-  log: (phoneNumber,questionSet) ->
+  log: (phoneNumber) ->
+    Gooseberry.logView = new LogView() unless Gooseberry.logView
+    Gooseberry.logView.number = phoneNumber
+    Gooseberry.viewLogDB
+      name: "messages_by_number"
+      startKey: [phoneNumber]
+      endKey: [phoneNumber,{}]
+      descending: true
+      include_docs: false,
+      success: (result) =>
+        Gooseberry.logView.logData = result.rows
+        Gooseberry.logView.render()
+
+  viewRawResult: (phoneNumber,questionSet) ->
     Gooseberry.view
       name: "states"
       key: phoneNumber
       include_docs: true
       success: (result) ->
-        console.log result
         state = (_(result.rows).find (result) ->
           result.value[0] is questionSet
         ).doc

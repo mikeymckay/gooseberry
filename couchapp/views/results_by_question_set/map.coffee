@@ -1,7 +1,7 @@
 (doc) ->
-  if doc.from
+  if doc.from and doc.results[0]
     data = {}
-    startTime = doc.results[0].datetime if doc.results[0]?
+    startTime = doc.results[0].datetime
     for result in doc.results
       if (result.valid)
         data[result.question_index] = result.answer
