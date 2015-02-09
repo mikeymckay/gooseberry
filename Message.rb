@@ -50,6 +50,7 @@ class Message
   def complete_action
     complete_action_string = QuestionSets.get_question_set(@state["question_set"])["complete action"]
     if complete_action_string
+      puts complete_action_string
       message = self
       eval complete_action_string
     end

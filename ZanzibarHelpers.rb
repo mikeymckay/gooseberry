@@ -202,14 +202,14 @@ class ZanzibarHelpers
     case_id
   end
 
-  def day_month_year_to_year_month_day(date)
+  def self.day_month_year_to_year_month_day(date)
     (day,month,year) = ZanzibarHelpers.date_format(date).captures
     "#{year}-#{month}-#{day}"
   end
 
   def self.notification_from_results(message)
     facility_information = ZanzibarHelpers.health_facility_for_number(message.from)
-    positive_test_date = day_month_year_to_year_month_day(message.result_for_question_name("positive_test_date"))
+    positive_test_date = ZanzibarHelpers.day_month_year_to_year_month_day(message.result_for_question_name("positive_test_date"))
 
     {
       "type" => "new_case",
