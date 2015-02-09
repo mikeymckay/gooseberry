@@ -10,7 +10,8 @@ class QuestionSet extends Backbone.Model
       endkey: [@id,moment(options.endDate).add(1,"day").format("YYYY-MM-DD")] #set to next day
       include_docs: false
       success: (result) ->
-        @results = _.pluck(result.rows, "value")
+        @results = result.rows
+        #@results = _.pluck(result.rows, "value")
         options.success(@results)
 
   fetchAllResults: (options) =>
@@ -20,7 +21,6 @@ class QuestionSet extends Backbone.Model
       endkey: [@id,{}]
       include_docs: false
       success: (result) ->
-        console.log result
         @results = _.pluck(result.rows, "value")
         options.success(@results)
 
@@ -28,8 +28,11 @@ class QuestionSet extends Backbone.Model
     _(@get("questions")).map (questionData) ->
       questionData.name or questionData.text
 
-  questionStringsWithNumberAndDate: =>
-    ["From","Date"].concat @questionStrings()
+  dataFields: =>
+    ["complete","from","updated_at"].concat(@questionStrings()).concat(@get "other_data")
+
+  dataIndexes: =>
+    ["complete","from","updated_at"].concat([0..(@questionStrings().length-1)]).concat(@get "other_data")
 
 class QuestionSetCollection extends Backbone.Collection
   model: QuestionSet

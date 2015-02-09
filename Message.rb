@@ -128,6 +128,17 @@ class Message
       send_message(@from, "#{question_set_name} is not a valid question set - did you mean #{closest_match}? Please try again.") unless QuestionSets.get_question_set(question_set_name)
       return false
     else
+      # If the question_set to start isn't the most recently used state, get the right one or create a new one
+      if question_set_name != @state["question_set"]
+        @state = get_state_for_user_with_question_set(question_set_name)
+        if @state.nil?
+          new_state(question_set_name)
+        end
+      # Else create a new state
+      else
+        new_state(question_set_name)
+      end
+
       # Allows us to run some code to see if we should proceed
       # For example - only send if the number is known
       pre_run_requirement = question_set["pre_run_requirement"]
@@ -138,17 +149,6 @@ class Message
           send_message(@from,pre_run_requirement_message)
           return false
         end
-      end
-
-      # If the question_set to start isn't the most recently used state, get the right one or create a new one
-      if question_set_name != @state["question_set"]
-        @state = get_state_for_user_with_question_set(question_set_name)
-        if @state.nil?
-          new_state(question_set_name)
-        end
-      # Else create a new state
-      else
-        new_state(question_set_name)
       end
     end
 
@@ -275,11 +275,16 @@ class Message
   end
 
   def add_data(data)
-    @state.merge! data
+    @state["other_data"] = {} unless @state["other_data"]
+    @state["other_data"].merge! data
+    puts @state.inspect
+    puts "----------------------"
   end
 
   def get_data(property)
-    @state[property]
+    puts @state.inspect
+    puts "***************"
+    @state["other_data"][property] unless @state["other_data"].nil?
   end
 
   def save_state

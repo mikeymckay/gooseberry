@@ -32,3 +32,7 @@
   background-color: #FFE6BA;
   width: 300px;
 }
+
+.incomplete{
+  color: gray;
+}

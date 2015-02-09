@@ -8,7 +8,8 @@ QuestionSet = (function(_super) {
   __extends(QuestionSet, _super);
 
   function QuestionSet() {
-    this.questionStringsWithNumberAndDate = __bind(this.questionStringsWithNumberAndDate, this);
+    this.dataIndexes = __bind(this.dataIndexes, this);
+    this.dataFields = __bind(this.dataFields, this);
     this.questionStrings = __bind(this.questionStrings, this);
     this.fetchAllResults = __bind(this.fetchAllResults, this);
     this.fetchResultsForDates = __bind(this.fetchResultsForDates, this);
@@ -29,7 +30,7 @@ QuestionSet = (function(_super) {
       endkey: [this.id, moment(options.endDate).add(1, "day").format("YYYY-MM-DD")],
       include_docs: false,
       success: function(result) {
-        this.results = _.pluck(result.rows, "value");
+        this.results = result.rows;
         return options.success(this.results);
       }
     });
@@ -42,7 +43,6 @@ QuestionSet = (function(_super) {
       endkey: [this.id, {}],
       include_docs: false,
       success: function(result) {
-        console.log(result);
         this.results = _.pluck(result.rows, "value");
         return options.success(this.results);
       }
@@ -55,8 +55,17 @@ QuestionSet = (function(_super) {
     });
   };
 
-  QuestionSet.prototype.questionStringsWithNumberAndDate = function() {
-    return ["From", "Date"].concat(this.questionStrings());
+  QuestionSet.prototype.dataFields = function() {
+    return ["complete", "from", "updated_at"].concat(this.questionStrings()).concat(this.get("other_data"));
+  };
+
+  QuestionSet.prototype.dataIndexes = function() {
+    var _i, _ref, _results;
+    return ["complete", "from", "updated_at"].concat((function() {
+      _results = [];
+      for (var _i = 0, _ref = this.questionStrings().length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; 0 <= _ref ? _i++ : _i--){ _results.push(_i); }
+      return _results;
+    }).apply(this)).concat(this.get("other_data"));
   };
 
   return QuestionSet;

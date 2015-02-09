@@ -24,7 +24,6 @@ $.couch.db(Gooseberry.config.database).openDoc("config", {
     Gooseberry.router = new Router();
     Backbone.couch_connector.config.db_name = Gooseberry.config.database;
     Backbone.couch_connector.config.ddoc_name = Gooseberry.config.designDoc;
-    Backbone.couch_connector.config.global_changes = true;
     return Backbone.history.start();
   }
 });

@@ -24,7 +24,7 @@
     data["firstResultTime"] = firstResultTime;
     data["updatedAt"] = doc.updated_at;
     data["complete"] = doc.complete;
-    return emit(doc.question_set, data);
+    return emit([doc.question_set, firstResultTime], data);
   }
 });
 

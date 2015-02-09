@@ -43,8 +43,8 @@ Router = (function(_super) {
     Gooseberry.logView.number = phoneNumber;
     return Gooseberry.viewLogDB({
       name: "messages_by_number",
-      startKey: [phoneNumber],
-      endKey: [phoneNumber, {}],
+      startkey: [phoneNumber, {}],
+      endkey: [phoneNumber],
       descending: true,
       include_docs: false,
       success: (function(_this) {

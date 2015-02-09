@@ -104,9 +104,40 @@ QuestionSetResults = (function(_super) {
     this.updateDate = __bind(this.updateDate, this);
     this.analyze = __bind(this.analyze, this);
     this.renderTableContents = __bind(this.renderTableContents, this);
+    this.updateTableContents = __bind(this.updateTableContents, this);
+    this.rowForQuestionSetResult = __bind(this.rowForQuestionSetResult, this);
+    this.rowDataForQuestionSetResult = __bind(this.rowDataForQuestionSetResult, this);
     this.renderTableStructure = __bind(this.renderTableStructure, this);
     this.fetchAndRender = __bind(this.fetchAndRender, this);
-    return QuestionSetResults.__super__.constructor.apply(this, arguments);
+    QuestionSetResults.__super__.constructor.call(this);
+    $.couch.db("gooseberry").changes(null, {
+      view: "results_by_question_set",
+      include_docs: true
+    }).onChange((function(_this) {
+      return function(data) {
+        return _(data.results).each(function(result) {
+          var questionSetResult, _i, _len, _ref;
+          questionSetResult = {
+            id: result.doc._id,
+            value: {
+              compete: result.doc.complete,
+              from: result.doc.from,
+              updated_at: result.doc.updated_at
+            }
+          };
+          if (result.doc.results) {
+            _ref = result.doc.results;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              result = _ref[_i];
+              if (result.valid) {
+                questionSetResult.value[result.question_index] = result.answer;
+              }
+            }
+          }
+          return _this.updateTableContents(questionSetResult);
+        });
+      };
+    })(this));
   }
 
   QuestionSetResults.prototype.el = '#content';
@@ -134,26 +165,55 @@ QuestionSetResults = (function(_super) {
   };
 
   QuestionSetResults.prototype.renderTableStructure = function() {
-    return this.$el.append("<table id='results'> <thead> " + (_(this.questionSet.questionStringsWithNumberAndDate()).map(function(header) {
+    return this.$el.append("<table id='results'> <thead> " + (_(this.questionSet.dataFields()).map(function(header) {
       return "<th>" + header + "</th>";
     }).join("")) + " </thead> <tbody> </tbody> </table>");
+  };
+
+  QuestionSetResults.prototype.rowDataForQuestionSetResult = function(questionSetResult) {
+    var result, returnValue, _i, _ref, _results;
+    result = questionSetResult.value;
+    returnValue = [result["complete"] || "false", result["from"] + " <small><a href='#log/" + result["from"] + "'>Log</a></small></td>", result["updated_at"]];
+    _((function() {
+      _results = [];
+      for (var _i = 0, _ref = this.questionSet.questionStrings().length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; 0 <= _ref ? _i++ : _i--){ _results.push(_i); }
+      return _results;
+    }).apply(this)).each(function(index) {
+      return returnValue.push("" + (result[index] || "-"));
+    });
+    return (this.questionSet.dataIndexes()).map(function(dataField) {
+      return result[dataField];
+    });
+  };
+
+  QuestionSetResults.prototype.rowForQuestionSetResult = function(questionSetResult) {
+    var result;
+    result = questionSetResult.value;
+    return "<tr id='" + questionSetResult.id + "' " + (result.complete !== true ? "class='incomplete'" : "") + " > " + (this.rowDataForQuestionSetResult(questionSetResult).map(function(element) {
+      return "<td>" + (element || "-") + "</td>";
+    }).join("")) + " </tr>";
+  };
+
+  QuestionSetResults.prototype.updateTableContents = function(questionSetResult) {
+    var dataTable, existingRowForResult, row;
+    existingRowForResult = $("#" + questionSetResult.id);
+    if (existingRowForResult.length !== 0) {
+      row = this.rowForQuestionSetResult(questionSetResult);
+      return existingRowForResult.replaceWith(row);
+    } else {
+      dataTable = $("#results").DataTable();
+      return dataTable.row.add(this.rowDataForQuestionSetResult(questionSetResult)).draw();
+    }
   };
 
   QuestionSetResults.prototype.renderTableContents = function(results) {
     this.$el.find("tbody").html(_(results).map((function(_this) {
       return function(result) {
-        var _i, _ref, _results;
-        return "<tr> <td><a href='#log/" + result["from"] + "'>" + result["from"] + "</a></td> <td>" + result["updated_at"] + "</td> " + (_((function() {
-          _results = [];
-          for (var _i = 0, _ref = _this.questionSet.questionStrings().length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; 0 <= _ref ? _i++ : _i--){ _results.push(_i); }
-          return _results;
-        }).apply(this)).map(function(index) {
-          return "<td>" + (result[index] || "-") + "</td>";
-        }).join("")) + " </tr>";
+        return _this.rowForQuestionSetResult(result);
       };
     })(this)).join(""));
-    return this.$el.find("table").dataTable({
-      order: [[1, "desc"]],
+    return this.$el.find("table#results").dataTable({
+      order: [[2, "desc"]],
       iDisplayLength: 25,
       dom: 'T<"clear">lfrtip',
       tableTools: {
@@ -165,7 +225,8 @@ QuestionSetResults = (function(_super) {
   QuestionSetResults.prototype.analyze = function() {
     return Gooseberry.view({
       name: "analysis_by_question_set",
-      key: this.questionSet.name(),
+      startkey: [this.questionSet.name(), this.startDate],
+      endkey: [this.questionSet.name(), moment(this.endDate).add(1, "day").format("YYYY-MM-DD")],
       include_docs: false,
       success: (function(_this) {
         return function(results) {
@@ -203,7 +264,7 @@ QuestionSetResults = (function(_super) {
             meanTimeToComplete = moment.duration(math.mean(completionDurations), "seconds").humanize();
           }
           return _this.$el.find("#stats").html("<ul> <li>Median Time To Complete: " + medianTimeToComplete + " (Fastest: " + fastestCompletion + " - Slowest: " + slowestCompletion + ") <!-- <li>Mean Time To Complete: " + meanTimeToComplete + " --> <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>" + incompleteResults.length + "</button> (" + incompletePercentage + ") <!--<a href='http://gooseberry.tangerinecentral.org/send_reminders/" + (_this.questionSet.name()) + "/240'>Send reminder SMS</a>--> <li>Total number of validation failures: <button id='toggleMistakes' type='button'>" + mistakeCount + "</button> (" + mistakePercentage + ") </ul> <div id='incompleteResultsDetails' style='display:none'> <h2>Incomplete Results</h2> <ul> " + (_(incompleteResults).map(function(number) {
-            return "<li>" + number;
+            return "<li><a href='#log/" + number + "'>" + number + "</a>";
           }).join("")) + " </ul> </div> <div id='mistakeDetails' style='display:none'> <h2>Validation Failures</h2> <table> <thead> <td>Question</td> <td>Answer</td> </thead> <tbody> " + (_(mistakes).map(function(mistake) {
             return _(mistake).map(function(value, index) {
               return "<tr> <td>" + (_this.questionSet.questionStrings()[index]) + "</td> <td>" + (value || "") + "</td> </tr>";
@@ -271,7 +332,6 @@ QuestionSetCollectionView = (function(_super) {
   QuestionSetCollectionView.prototype.interact = function(event) {
     var name, target;
     name = $(event.target).closest("tr").attr("data-name");
-    console.log(document.location.hostname);
     target = Gooseberry.config.messageTarget;
     return Gooseberry.router.navigate("interact/" + name + "?target=" + target, {
       trigger: true
@@ -300,7 +360,6 @@ QuestionSetCollectionView = (function(_super) {
           questionSet.unset("_rev");
           return questionSet.save({
             success: function() {
-              console.log("AAA");
               return _this.render();
             },
             error: function() {

@@ -25,8 +25,8 @@ class Router extends Backbone.Router
     Gooseberry.logView.number = phoneNumber
     Gooseberry.viewLogDB
       name: "messages_by_number"
-      startKey: [phoneNumber]
-      endKey: [phoneNumber,{}]
+      startkey: [phoneNumber,{}]
+      endkey: [phoneNumber]
       descending: true
       include_docs: false,
       success: (result) =>

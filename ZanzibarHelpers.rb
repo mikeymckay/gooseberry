@@ -142,7 +142,7 @@ class ZanzibarHelpers
     (year,week) = ZanzibarHelpers.extract_year_week(message.result_for_question_name("year_week"))
     (under_5_total, under_5_malaria_positive, under_5_malaria_negative) = ZanzibarHelpers.extract_total_visits_malaria_positive_malaria_negative(message.result_for_question_name "under_5")
     (over_5_total, over_5_malaria_positive, over_5_malaria_negative) = ZanzibarHelpers.extract_total_visits_malaria_positive_malaria_negative(message.result_for_question_name "over_5")
-    facility= ZanzibarHelpers.health_facility_name_for_number(message.from)
+    facility= message.get_data("facility")
 
     "Thanks. #{facility}, y#{year}, w#{week}: <5: [#{under_5_total}, +#{under_5_malaria_positive}, -#{under_5_malaria_negative} ] >5: [#{over_5_total} , +#{over_5_malaria_positive}, -#{over_5_malaria_negative}]"
 
@@ -153,7 +153,6 @@ class ZanzibarHelpers
     (year,week) = ZanzibarHelpers.extract_year_week(message.result_for_question_name("year_week"))
     (under_5_total, under_5_malaria_positive, under_5_malaria_negative) = ZanzibarHelpers.extract_total_visits_malaria_positive_malaria_negative(message.result_for_question_name "under_5")
     (over_5_total, over_5_malaria_positive, over_5_malaria_negative) = ZanzibarHelpers.extract_total_visits_malaria_positive_malaria_negative(message.result_for_question_name "over_5")
-    facility_information = ZanzibarHelpers.health_facility_for_number(message.from)
     {
       "type" => "weekly_report",
       "source" => "gooseberry sms",
@@ -167,8 +166,8 @@ class ZanzibarHelpers
       "over 5 opd" => over_5_total,
       "over 5 positive" => over_5_malaria_positive,
       "over 5 negative" => over_5_malaria_negative,
-      "hf" => facility_information["facility"],
-      "facility_district" => facility_information["facility_district"],
+      "hf" => message.get_data("facility"),
+      "facility_district" => message.get_data("facility_district")
     }
   end
 
@@ -208,7 +207,6 @@ class ZanzibarHelpers
   end
 
   def self.notification_from_results(message)
-    facility_information = ZanzibarHelpers.health_facility_for_number(message.from)
     positive_test_date = ZanzibarHelpers.day_month_year_to_year_month_day(message.result_for_question_name("positive_test_date"))
 
     {
@@ -220,8 +218,8 @@ class ZanzibarHelpers
       "name" => message.result_for_question_name("name"),
       "positive_test_date" => positive_test_date,
       "shehia" => message.result_for_question_name("shehia"),
-      "hf" => facility_information["facility"],
-      "facility_district" => facility_information["facility_district"],
+      "hf" => message.get_data("facility"),
+      "facility_district" => message.get_data("facility_district"),
       "hasCaseNotification" => false
     } 
   end
@@ -230,20 +228,15 @@ class ZanzibarHelpers
     puts $zanzibar_couchdb.save_doc(notification_from_results(message))
   end
 
-  def self.health_facility_name_for_number(number)
-    health_facility = ZanzibarHelpers.health_facility_for_number(number)
-    if health_facility
-      health_facility["facility"]
-    else
-      nil
-    end
+  def self.health_facility_name(message)
+    message.get_data "facility"
   end
 
   def self.clean_number(number)
     number.gsub(/\D/, '').gsub(/^0/,"").gsub(/^+255/,"")
   end
 
-  def self.health_facility_for_number(number)
+  def self.save_health_facility_for_number(message,number)
     # Get just the numbers, ignore leading zeroes
     #
 
@@ -264,10 +257,14 @@ class ZanzibarHelpers
       end
     end
 
-    return {
+    facility_and_district = {
       "facility" => facility,
       "facility_district" => facility_district
     }
+
+    message.add_data facility_and_district
+
+    return facility_district
   end
 
 end
