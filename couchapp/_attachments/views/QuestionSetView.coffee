@@ -55,19 +55,50 @@ class QuestionSetEdit extends Backbone.View
 
 
 class QuestionSetResults extends Backbone.View
+  constructor: ->
+    super()
+    $.couch.db("gooseberry").changes null,
+      view: "results_by_question_set"
+      include_docs: true
+    .onChange (data) =>
+      #@fetchAndRender()
+      #return
+      _(data.results).each (result) =>
+        # Need this to match the results_by_question set view output
+        questionSetResult = {
+          id: result.doc._id
+          value: {
+            compete: result.doc.complete
+            from: result.doc.from
+            updated_at: result.doc.updated_at
+          }
+        }
+
+        if result.doc.results
+
+          for result in result.doc.results
+            if result.valid
+              questionSetResult.value[result.question_index] = result.answer
+
+        @updateTableContents(questionSetResult)
+
   el: '#content'
 
-  fetchAndRender: (name) ->
+  fetchAndRender: () =>
     @$el.html "
-      <h1>#{name}</h1>
+      <h1>#{@name}</h1>
+      <input id='startDate' type='date' value='#{@startDate}'></input>
+      <input id='endDate' type='date' value='#{@endDate}'></input>
       <div id='stats'></div>
     "
     @questionSet = new QuestionSet
-      _id: name
+      _id: @name
     @questionSet.fetch
       success: =>
         @renderTableStructure()
-        @questionSet.fetchResults
+        @questionSet.fetchResultsForDates
+          startDate: @startDate
+          endDate: @endDate
           success: (results) =>
             @renderTableContents(results)
             @analyze()
@@ -77,7 +108,7 @@ class QuestionSetResults extends Backbone.View
       <table id='results'>
         <thead>
           #{
-            _(@questionSet.questionStringsWithNumberAndDate()).map (header) ->
+            _(@questionSet.dataFields()).map (header) ->
               "<th>#{header}</th>"
             .join("")
           }
@@ -87,23 +118,49 @@ class QuestionSetResults extends Backbone.View
       </table>
     "
 
+  rowDataForQuestionSetResult: (questionSetResult) =>
+    result = questionSetResult.value
+    returnValue =  [
+      result["complete"] || "false"
+      "#{result["from"]} <small><a href='#log/#{result["from"]}'>Log</a></small></td>"
+      result["updated_at"]
+    ]
+    _([0..@questionSet.questionStrings().length-1]).each (index) ->
+      returnValue.push "#{result[index] or "-"}"
+
+    (@questionSet.dataIndexes()).map (dataField) ->
+      result[dataField]
+
+
+  rowForQuestionSetResult: (questionSetResult) =>
+    result = questionSetResult.value
+    "
+      <tr id='#{questionSetResult.id}' #{if result.complete isnt true then "class='incomplete'" else ""} >
+        #{
+          @rowDataForQuestionSetResult(questionSetResult).map (element) ->
+            "<td>#{element or "-"}</td>"
+          .join("")
+        }
+      </tr>
+    "
+
+  updateTableContents: (questionSetResult) =>
+    existingRowForResult = $("##{questionSetResult.id}")
+    if existingRowForResult.length != 0
+      row = @rowForQuestionSetResult(questionSetResult)
+      existingRowForResult.replaceWith row
+    else
+      dataTable = $("#results").DataTable()
+      dataTable.row.add(@rowDataForQuestionSetResult(questionSetResult)).draw()
+    
   renderTableContents: (results) =>
     @$el.find("tbody").html(
-      _(results).map (result) => "
-        <tr>
-          <td><a href='#log/#{result["from"]}/#{@questionSet.name()}'>#{result["from"]}</a></td>
-          <td>#{result["updated_at"]}</td>
-          #{
-            _([0..@questionSet.questionStrings().length-1]).map (index) ->
-              "<td>#{result[index] or "-"}</td>"
-            .join("")
-          }
-        </tr>
-      "
+      _(results).map (result) =>
+        @rowForQuestionSetResult(result)
       .join("")
     )
-    @$el.find("table").dataTable
-      order: [[ 1, "desc" ]]
+    @$el.find("table#results").dataTable
+      order: [[ 2, "desc" ]]
       iDisplayLength: 25
       dom: 'T<"clear">lfrtip'
       tableTools:
@@ -114,24 +171,22 @@ class QuestionSetResults extends Backbone.View
   analyze: =>
     Gooseberry.view
       name: "analysis_by_question_set"
-      key: @questionSet.name()
+      startkey: [@questionSet.name(),@startDate]
+      endkey: [@questionSet.name(),moment(@endDate).add(1,"day").format("YYYY-MM-DD")] #set to next day
       include_docs: false
       success: (results) =>
         completionDurations = []
         incompleteResults = []
         completeResults = 0
         mistakes = []
-        requiredIndices = @questionSet.get "required_indices"
-        requiredIndices = JSON.parse requiredIndices if requiredIndices?
         _(_(results.rows).pluck("value")).each (result) =>
 
-          if requiredIndices?
-            if _(requiredIndices).difference(result.validIndices).length is 0
-              completeResults += 1
-              if result.updatedAt and result.firstResultTime
-                completionDurations.push moment(result.updatedAt).diff(moment(result.firstResultTime), "seconds")
-            else
-              incompleteResults.push result["from"]
+          if result.complete is true
+            completeResults += 1
+            if result.updatedAt and result.firstResultTime
+              completionDurations.push moment(result.updatedAt).diff(moment(result.firstResultTime), "seconds")
+          else
+            incompleteResults.push result["from"]
 
           mistakes.push(result.invalidResult) unless _(result.invalidResult).isEmpty()
 
@@ -141,10 +196,9 @@ class QuestionSetResults extends Backbone.View
             mistakeCount += 1
 
 
-        if requiredIndices
-          totalResults = completeResults + incompleteResults.length
-          incompletePercentage = "#{Math.floor(incompleteResults.length/totalResults*100)} %"
-          mistakePercentage = "#{Math.floor(100 * mistakeCount/(totalResults*requiredIndices.length))} %"
+        totalResults = completeResults + incompleteResults.length
+        incompletePercentage = "#{Math.floor(incompleteResults.length/totalResults*100)} %"
+        mistakePercentage = "#{Math.floor(100 * mistakeCount/(totalResults))} %"
 
         if completionDurations.length > 0
           fastestCompletion = moment.duration(_(completionDurations).min(), "seconds").humanize()
@@ -158,7 +212,7 @@ class QuestionSetResults extends Backbone.View
             <!--
             <li>Mean Time To Complete: #{meanTimeToComplete}
             -->
-            <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>#{incompleteResults.length}</button> (#{incompletePercentage}) <a href='http://gooseberry.tangerinecentral.org/send_reminders/#{@questionSet.name()}/240'>Send reminder SMS</a>
+            <li>Number of incomplete results: <button type='button' id='toggleIncompletes'>#{incompleteResults.length}</button> (#{incompletePercentage}) <!--<a href='http://gooseberry.tangerinecentral.org/send_reminders/#{@questionSet.name()}/240'>Send reminder SMS</a>-->
             <li>Total number of validation failures: <button id='toggleMistakes' type='button'>#{mistakeCount}</button> (#{mistakePercentage})
           </ul>
           <div id='incompleteResultsDetails' style='display:none'>
@@ -167,7 +221,7 @@ class QuestionSetResults extends Backbone.View
             #{
               _(incompleteResults).map (number) =>
                 "
-                  <li>#{number}
+                  <li><a href='#log/#{number}'>#{number}</a>
                 "
               .join("")
             }
@@ -201,10 +255,16 @@ class QuestionSetResults extends Backbone.View
   toggleIncompletes: -> $("#incompleteResultsDetails").toggle()
   toggleMistakes: -> $("#mistakeDetails").toggle()
 
+  updateDate: =>
+    Gooseberry.router.navigate "question_set/#{@name}/results/#{$("#startDate").val()}/#{$("#endDate").val()}", {trigger: true}
+    
+
   events:
     "click button#save": "save"
     "click button#toggleMistakes": "toggleMistakes"
     "click button#toggleIncompletes": "toggleIncompletes"
+    "change #startDate": "updateDate"
+    "change #endDate": "updateDate"
 
 
 
@@ -226,11 +286,7 @@ class QuestionSetCollectionView extends Backbone.View
 
   interact: (event) =>
     name = $(event.target).closest("tr").attr("data-name")
-    console.log document.location.hostname
-    target = if document.location.hostname is "localhost"
-      "http://localhost:9393/22340/incoming"
-    else
-      "http://gooseberry.tangerinecentral.org/22340/incoming"
+    target = Gooseberry.config.messageTarget
     Gooseberry.router.navigate "interact/#{name}?target=#{target}", {trigger: true}
 
   cancel: ->
@@ -250,9 +306,9 @@ class QuestionSetCollectionView extends Backbone.View
         questionSet.clone()
         questionSet.set "_id", $("#copyFormField").val().toUpperCase()
         questionSet.unset "_rev"
-        questionSet.save
+        questionSet.save null,
           success: =>
-            console.log "AAA"
+            console.log "RENDERING"
             @render()
           error: =>
             console.log "RAA"
@@ -289,6 +345,7 @@ class QuestionSetCollectionView extends Backbone.View
       trigger: true
 
   render: =>
+    console.log "RENDER"
     questionSets = new QuestionSetCollection()
     questionSets.fetch
       success: =>
@@ -327,7 +384,7 @@ class QuestionSetCollectionView extends Backbone.View
           </table>
         "
         questionSets.each (questionSet) ->
-          questionSet.fetchResults
+          questionSet.fetchAllResults
             success: (results) ->
               $("tr[data-name='#{questionSet.name()}'] td.number-of-results").html results.length
 

@@ -17,4 +17,4 @@
     data["firstResultTime"] = firstResultTime
     data["updatedAt"] = doc.updated_at
     data["complete"] = doc.complete
-    emit doc.question_set, data
+    emit [doc.question_set,firstResultTime], data

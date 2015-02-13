@@ -26,9 +26,13 @@
   background-color: #BAD3ff;
   width: 300px;
 }
-.received{
+.received, .incoming{
   margin-top: 10px;
   margin-left:30px;
   background-color: #FFE6BA;
   width: 300px;
+}
+
+.incomplete{
+  color: gray;
 }

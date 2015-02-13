@@ -6,8 +6,10 @@ class Router extends Backbone.Router
     "question_set/:name/new": "newQuestionSet"
     "question_set/:name/edit": "editQuestionSet"
     "question_set/:name/results": "questionSetResults"
+    "question_set/:name/results/:startDate/:endDate": "questionSetResults"
     "interact/:name": "interact"
-    "log/:phoneNumber/:questionSet": "log"
+    "raw/:phoneNumber/:questionSet": "viewRawResult"
+    "log/:phoneNumber": "log"
     "analyze/:questionSet": "analyze"
     '*invalidRoute' : 'showErrorPage'
 
@@ -18,13 +20,25 @@ class Router extends Backbone.Router
     Gooseberry.interactView.target = target
     Gooseberry.interactView.render()
 
-  log: (phoneNumber,questionSet) ->
+  log: (phoneNumber) ->
+    Gooseberry.logView = new LogView() unless Gooseberry.logView
+    Gooseberry.logView.number = phoneNumber
+    Gooseberry.viewLogDB
+      name: "messages_by_number"
+      startkey: [phoneNumber,{}]
+      endkey: [phoneNumber]
+      descending: true
+      include_docs: false,
+      success: (result) =>
+        Gooseberry.logView.logData = result.rows
+        Gooseberry.logView.render()
+
+  viewRawResult: (phoneNumber,questionSet) ->
     Gooseberry.view
       name: "states"
       key: phoneNumber
       include_docs: true
       success: (result) ->
-        console.log result
         state = (_(result.rows).find (result) ->
           result.value[0] is questionSet
         ).doc
@@ -67,9 +81,12 @@ class Router extends Backbone.Router
     Gooseberry.questionSetEdit = new QuestionSetEdit() unless Gooseberry.questionSetEdit
     Gooseberry.questionSetEdit.fetchAndRender(name)
 
-  questionSetResults: (name) ->
+  questionSetResults: (name,startDate = moment().subtract(1,"week").format("YYYY-MM-DD"),endDate = moment().format("YYYY-MM-DD")) ->
     Gooseberry.questionSetResults = new QuestionSetResults() unless Gooseberry.questionSetResults
-    Gooseberry.questionSetResults.fetchAndRender(name)
+    Gooseberry.questionSetResults.startDate = startDate
+    Gooseberry.questionSetResults.endDate = endDate
+    Gooseberry.questionSetResults.name = name
+    Gooseberry.questionSetResults.fetchAndRender()
 
   userLoggedIn: (callback) ->
     User.isAuthenticated

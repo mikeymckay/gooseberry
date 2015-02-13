@@ -1,12 +1,31 @@
 class Message
 
   def initialize(options)
-    @from = options["from"] # The number that sent the message
-    @to = options["to"]     # The number to which the message was sent
+    @from = options["from"] || options["org"]  # The number that sent the message
+    @to = options["to"] || options["dest"] # The number to which the message was sent
     @date = options["date"] # The date and time when the message was received
     @id = options["id"]     # The internal ID that we use to store this message
     @linkId = options["linkId"] # Optional parameter required when responding to an on-demand user request with a premium message
-    @text = clean(options["text"]) if options["text"]# The message content
+    @text = if options["text"]
+      clean options["text"]
+    elsif options["message"]
+      clean options["message"]
+    end
+
+    log_incoming_message()
+
+  end
+
+  def log_incoming_message
+    $db_log.save_doc ({
+      "type" => "incoming",
+      "to" => @to,
+      "from" => @from,
+      "message" => @text,
+      "time" => Time.now.strftime("%Y-%m-%d %H:%M:%S.%3N"),
+      "id" => @id,
+      "linkId" => @linkId
+    })
   end
 
   def process
@@ -24,9 +43,8 @@ class Message
   def complete_action
     complete_action_string = QuestionSets.get_question_set(@state["question_set"])["complete action"]
     if complete_action_string
-      message = self
-      puts "***********"
       puts complete_action_string
+      message = self
       eval complete_action_string
     end
   end
@@ -74,7 +92,7 @@ class Message
 
   end
 
-  def look_for_start_triggers(text)
+  def look_for_start_triggers
     result = true
     if @text.match(/ /) # configured trigger words don't have spaces
       # default trigger uses word start followed by question set id
@@ -103,20 +121,6 @@ class Message
       send_message(@from, "#{question_set_name} is not a valid question set - did you mean #{closest_match}? Please try again.") unless QuestionSets.get_question_set(question_set_name)
       return false
     else
-      # Allows us to run some code to see if we should proceed
-      # For example - only send if the number is known
-      pre_run_requirement = question_set["pre_run_requirement"]
-      puts "AA"
-      if pre_run_requirement
-        puts pre_run_requirement
-        pre_run_requirement_message = eval pre_run_requirement
-        puts pre_run_requirement_message
-        if pre_run_requirement_message
-          send_message(@from,pre_run_requirement_message)
-          return false
-        end
-      end
-
       # If the question_set to start isn't the most recently used state, get the right one or create a new one
       if question_set_name != @state["question_set"]
         @state = get_state_for_user_with_question_set(question_set_name)
@@ -127,12 +131,24 @@ class Message
       else
         new_state(question_set_name)
       end
+
+      # Allows us to run some code to see if we should proceed
+      # For example - only send if the number is known
+      pre_run_requirement = question_set["pre_run_requirement"]
+      if pre_run_requirement
+        pre_run_requirement_message = eval pre_run_requirement
+        puts pre_run_requirement_message
+        if pre_run_requirement_message
+          send_message(@from,pre_run_requirement_message)
+          return false
+        end
+      end
     end
 
   end
 
   def process_triggers
-    result = look_for_start_triggers @text
+    result = look_for_start_triggers
     return if result == false
 
     if @text.match(/^$/i)
@@ -180,8 +196,6 @@ class Message
       end
 
       @validation_message = if current_question["validation"]
-        puts  "answer = '#{answer.sub(/'/,'') if answer}';#{current_question["validation"]}"
-
         eval "answer = '#{answer.sub(/'/,'') if answer}';#{current_question["validation"]}"
       end
 
@@ -250,8 +264,20 @@ class Message
       end
     }.compact.join(";")
 
-    puts "#{sets_results_as_variables}; \"#{complete_message}\""
     eval "#{sets_results_as_variables}; \"#{complete_message}\""
+  end
+
+  def add_data(data)
+    @state["other_data"] = {} unless @state["other_data"]
+    @state["other_data"].merge! data
+    puts @state.inspect
+    puts "----------------------"
+  end
+
+  def get_data(property)
+    puts @state.inspect
+    puts "***************"
+    @state["other_data"][property] unless @state["other_data"].nil?
   end
 
   def save_state
@@ -259,10 +285,22 @@ class Message
     @state = $db.save_doc(@state)
   end
 
+  def log_sent_message(to,message,response)
+    $db_log.save_doc ({
+      "type" => "sent",
+      "to" => to,
+      "from" => @from,
+      "message" => message,
+      "time" => Time.now.strftime("%Y-%m-%d %H:%M:%S.%3N"),
+      "response" => response
+    })
+  end
+
   def send_message(to,message)
-    puts "Sending #{to}: #{message}"
-    if @id #source was an SMS
-      $gateway.send_message(
+
+    response = nil
+    if @from != "web"
+      response = $gateway.send_message(
         to,
         message,
         {
@@ -271,8 +309,13 @@ class Message
         }
       )
     else # source was via web
-      "#{to}:#{message}"
+      response = "#{to}:#{message}"
     end
+
+    puts "Response from SMS Gateway: #{response}"
+    log_sent_message(to,message,response)
+    response
+
   end
 
   def set_questions

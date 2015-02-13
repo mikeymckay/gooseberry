@@ -22,6 +22,7 @@ end
 $passwords_and_config = JSON.parse(IO.read("passwords_and_config.json"))
 $database_name = "gooseberry"
 $db = CouchRest.database("http://localhost:5984/#{$database_name}")
+$db_log = CouchRest.database("http://localhost:5984/#{$database_name}-log")
 
 require_relative 'AfricasTalkingGateway'
 
@@ -34,6 +35,5 @@ $gateway = AfricasTalkingGateway.new(
 require_relative 'reports'
 require_relative 'Message'
 require_relative 'ValidationHelpers'
-require_relative 'ZanzibarHelpers'
 require_relative 'QuestionSets'
 require_relative 'routes'
