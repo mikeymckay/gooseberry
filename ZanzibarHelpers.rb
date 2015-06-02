@@ -257,6 +257,8 @@ class ZanzibarHelpers
       end
     end
 
+    return false if facility_district.nil? and facility.nil?
+
     facility_and_district = {
       "facility" => facility,
       "facility_district" => facility_district
@@ -267,4 +269,46 @@ class ZanzibarHelpers
     return facility_district
   end
 
+  #### RAINFALL ######
+  def self.save_rainfall_station_for_number(message,number)
+    # Get just the numbers, ignore leading zeroes
+    #
+
+    number = self.clean_number(number)
+
+    rainfall_stations = JSON.parse(RestClient.get "#{$zanzibar_couchdb}/Rainfall%20Stations", {:accept => :json})["data"]
+    rainfall_station_for_number = nil
+    rainfall_stations.each do |station,data|
+      if data["Phone Numbers"].map{|num| self.clean_number(num) }.include? number
+        rainfall_station_for_number = station
+        break
+      end
+    end
+
+    return false if rainfall_station_for_number.nil?
+
+    return_val = {"rainfall_station" => rainfall_station_for_number}
+
+    message.add_data return_val
+
+    return_val
+  end
+
+  def self.post_rainfall_report(message)
+    puts $zanzibar_couchdb.save_doc(rainfall_report_from_results(message))
+  end
+
+  def self.rainfall_report_from_results(message)
+    (year,week) = ZanzibarHelpers.extract_year_week(message.result_for_question_name("year_week"))
+    {
+      "type" => "rainfall_report",
+      "source" => "gooseberry sms",
+      "source_phone" => message.from,
+      "date" => Time.now.strftime("%Y-%m-%d %H:%M:%S"),
+      "year" => year,
+      "week" => week,
+      "rainfall_amount" => message.get_data("rainfall_amount"),
+      "station" => message.get_data("rainfall_station")
+    }
+  end
 end
