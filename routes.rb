@@ -1,8 +1,6 @@
 
 def incoming(params)
   puts "#{Time.now} Received: #{params}"
-
-
   message = Message.new(params)
   result = message.process
 

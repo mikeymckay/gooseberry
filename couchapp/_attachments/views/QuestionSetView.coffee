@@ -35,6 +35,10 @@ class QuestionSetEdit extends Backbone.View
     @$el.html "
       <button id='save' type='button'>Save</button>
       <pre id='editor'></pre>
+
+      <h2>Documentation</h2>
+      other_data can be set by calling add_data({'name' => 'value'})
+      If they are listed, then they will also be used for the spreadsheet
     "
 
     @editor = ace.edit('editor')
@@ -64,6 +68,9 @@ class QuestionSetResults extends Backbone.View
       #@fetchAndRender()
       #return
       _(data.results).each (result) =>
+        # Only add rows for this question set
+        return unless result.key[0] is @name
+
         # Need this to match the results_by_question set view output
         questionSetResult = {
           id: result.doc._id
@@ -306,8 +313,9 @@ class QuestionSetCollectionView extends Backbone.View
         questionSet.clone()
         questionSet.set "_id", $("#copyFormField").val().toUpperCase()
         questionSet.unset "_rev"
-        questionSet.save
+        questionSet.save null,
           success: =>
+            console.log "RENDERING"
             @render()
           error: =>
             console.log "RAA"
@@ -344,6 +352,7 @@ class QuestionSetCollectionView extends Backbone.View
       trigger: true
 
   render: =>
+    console.log "RENDER"
     questionSets = new QuestionSetCollection()
     questionSets.fetch
       success: =>

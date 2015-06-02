@@ -24,12 +24,6 @@ $database_name = "gooseberry"
 $db = CouchRest.database("http://localhost:5984/#{$database_name}")
 $db_log = CouchRest.database("http://localhost:5984/#{$database_name}-log")
 
-#require_relative 'AfricasTalkingGateway'
-#$gateway = AfricasTalkingGateway.new(
-#  $passwords_and_config["username"], 
-#  $passwords_and_config["api_key"],
-#  $passwords_and_config["phone_number"]
-#)
 
 class BongoLive
   def send_message(to,message, options)

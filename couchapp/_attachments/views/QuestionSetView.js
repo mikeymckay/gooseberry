@@ -110,6 +110,7 @@ QuestionSetResults = (function(_super) {
     this.renderTableStructure = __bind(this.renderTableStructure, this);
     this.fetchAndRender = __bind(this.fetchAndRender, this);
     QuestionSetResults.__super__.constructor.call(this);
+    console.log(this.name);
     $.couch.db("gooseberry").changes(null, {
       view: "results_by_question_set",
       include_docs: true
@@ -117,6 +118,9 @@ QuestionSetResults = (function(_super) {
       return function(data) {
         return _(data.results).each(function(result) {
           var questionSetResult, _i, _len, _ref;
+          if (result.key[0] !== _this.name) {
+            return;
+          }
           questionSetResult = {
             id: result.doc._id,
             value: {
@@ -358,8 +362,9 @@ QuestionSetCollectionView = (function(_super) {
           questionSet.clone();
           questionSet.set("_id", $("#copyFormField").val().toUpperCase());
           questionSet.unset("_rev");
-          return questionSet.save({
+          return questionSet.save(null, {
             success: function() {
+              console.log("RENDERING");
               return _this.render();
             },
             error: function() {
@@ -426,6 +431,7 @@ QuestionSetCollectionView = (function(_super) {
 
   QuestionSetCollectionView.prototype.render = function() {
     var questionSets;
+    console.log("RENDER");
     questionSets = new QuestionSetCollection();
     return questionSets.fetch({
       success: (function(_this) {
