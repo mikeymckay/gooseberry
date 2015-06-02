@@ -287,7 +287,7 @@ class ZanzibarHelpers
 
     return false if rainfall_station_for_number.nil?
 
-    return_val = {"rainfall_station" => rainfall_station_for_number}
+    return_val = {"station_name" => rainfall_station_for_number}
 
     message.add_data return_val
 
@@ -308,7 +308,7 @@ class ZanzibarHelpers
       "year" => year,
       "week" => week,
       "rainfall_amount" => message.get_data("rainfall_amount"),
-      "station" => message.get_data("rainfall_station")
+      "station" => message.get_data("station_name")
     }
   end
 end
