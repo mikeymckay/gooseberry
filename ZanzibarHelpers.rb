@@ -307,7 +307,7 @@ class ZanzibarHelpers
       "date" => Time.now.strftime("%Y-%m-%d %H:%M:%S"),
       "year" => year,
       "week" => week,
-      "rainfall_amount" => message.get_data("rainfall_amount"),
+      "rainfall_amount" => message.result_for_question_name("rainfall_amount"),
       "station" => message.get_data("station_name")
     }
   end

@@ -215,6 +215,21 @@ class Message
     end
   end
 
+  def values_for_interpolation
+
+    # create a string with all of the results set as variables names so that it can be eval'd and the variables used
+    # Also includes values from other_data
+    @state["results"].find_all{|result|
+      result["valid"] == true
+    }.map{|result|
+      if result["question_name"]
+        "#{result["question_name"]} = \"#{result["answer"]}\""
+      end
+    }.compact.join(";") + ";" +  @state["other_data"].map do |name,value|
+      "#{name} = \"#{value}\""
+    end.join(";")
+  end
+
   def send_next_message
     message = ""
     @current_question_index += 1
@@ -222,27 +237,16 @@ class Message
     if @questions[@current_question_index]
 
       skip_if = @questions[@current_question_index]["skip_if"]
-# Creates a hash called answers that enables you to insert previous results into the response
       if skip_if 
-        answers_hash = {}
-        @state["results"].each do |result|
-          index = result["question_name"] || result["question"]
-          answers_hash[index] = result["answer"]
-        end
-        if(eval "answers = #{answers_hash};#{skip_if}")
+        if eval("#{values_for_interpolation};skip_if")
           return send_next_message() #RECURSE
         end
-        answer["other_data"].each do |property,value|
-          answer[property] = value
-        end
-        delete answer["other_data"]
       end
-
-      puts answers
 
       @state["current_question_index"] = @current_question_index
       message = @questions[@current_question_index]["text"]
-      message = eval "\"#{message}\"" # Allows you to dynamically change the text of the message
+      # Allows you to be able to refer to value["name_of_question"] in message
+      message = eval "#{values_for_interpolation};\"#{message}\"" # Allows you to dynamically change the text of the message
       message = "#{@validation_message} #{message}" if @validation_message
     else
       @state["current_question_index"] = nil
@@ -262,16 +266,7 @@ class Message
   end
 
   def evaluate_complete_message(complete_message)
-    # create a string with all of the results set as variables names so that it can be eval'd and the variables used
-    sets_results_as_variables = @state["results"].find_all{|result|
-      result["valid"] == true
-    }.map{|result|
-      if result["question_name"]
-        "#{result["question_name"]} = \"#{result["answer"]}\""
-      end
-    }.compact.join(";")
-
-    eval "#{sets_results_as_variables}; \"#{complete_message}\""
+    eval "#{values_for_interpolation}; \"#{complete_message}\""
   end
 
   def add_data(data)
