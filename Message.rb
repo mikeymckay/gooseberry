@@ -222,7 +222,8 @@ class Message
     if @questions[@current_question_index]
 
       skip_if = @questions[@current_question_index]["skip_if"]
-# Creates a hash called answers that enables you to insert previous results into the response
+      # Creates a hash called answers that enables you to insert previous results into the response
+      puts skip_if
       if skip_if 
         answers_hash = {}
         @state["results"].each do |result|
@@ -232,13 +233,7 @@ class Message
         if(eval "answers = #{answers_hash};#{skip_if}")
           return send_next_message() #RECURSE
         end
-        answer["other_data"].each do |property,value|
-          answer[property] = value
-        end
-        delete answer["other_data"]
       end
-
-      puts answers
 
       @state["current_question_index"] = @current_question_index
       message = @questions[@current_question_index]["text"]
