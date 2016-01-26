@@ -1,6 +1,6 @@
 # Gooseberry
 
-A system for creating interactive SMS sessions. It stores SMS sessions in CouchDB. It uses ruby to manage incoming/outgoing messages. It can send and receive messages via SMS Gateways like https://africastalking.com/, http://www.bongolive.co.tz/ or phone based gateways like http://smssync.ushahidi.com/. It uses a couchapp written in coffeescript (& backbone.js) to look at results (updated in realtime!) and edit the interactive SMS question sets. Results may be downloaded as a CSV.
+A system for creating interactive SMS sessions. It stores SMS sessions in CouchDB. It uses ruby to manage incoming/outgoing messages. It can send and receive messages via SMS Gateways like https://africastalking.com/, http://www.bongolive.co.tz/ or phone based gateways like http://smssync.ushahidi.com/. It produces a single app webpage, deployed as a couchapp written in coffeescript (& backbone.js) to look at results (updated in realtime!) and edit the interactive SMS question sets. Results may be downloaded as a CSV.
 
 ## Why does the world need Gooseberry?
 
