@@ -1,6 +1,17 @@
 # Gooseberry
 
-A system for creating interactive SMS sessions. It stores SMS sessions in CouchDB. It uses ruby to manage incoming/outgoing messages. It can send and receive messages via SMS Gateways like https://africastalking.com/, http://www.bongolive.co.tz/ or phone based gateways like http://smssync.ushahidi.com/. It produces a single app webpage, deployed as a couchapp written in coffeescript (& backbone.js) to look at results (updated in realtime!) and edit the interactive SMS question sets. Results may be downloaded as a CSV.
+A system for creating interactive SMS sessions. It stores SMS sessions in CouchDB. It uses Sinatra on ruby to manage incoming/outgoing messages. It can send and receive messages via SMS Gateways like https://africastalking.com/, http://www.bongolive.co.tz/ or phone based gateways like http://smssync.ushahidi.com/. It produces a single app webpage, deployed as a couchapp written in coffeescript (& backbone.js) to look at results (updated in realtime!) and edit the interactive SMS question sets. Results may be downloaded as a CSV.
+
+## How to deploy
+* Clone it
+* Install the required Ruby gems
+* Install couchdb
+* Install couchappp
+* Push code in couchapp directory to your couchdb
+* Connect your web server to the Sinatra app (a unicorn example is in the code)
+* Connect your SMS Gateway
+
+That's the high level version. Please get in touch if you want to use it and we will make it easier to deploy.
 
 ## Why does the world need Gooseberry?
 
