@@ -75,7 +75,8 @@ class Message
 
   def process_triggers
     case @text
-      when /^Start (.+)/i
+      # HACK TO HANDLE USERS THAT FORGET TO WRITE START - handled in next version
+      when /^Start (.+)/i, /(TUSOMETEACHER)/i
         question_set_name = $1.upcase
 
         if QuestionSets.get_question_set(question_set_name).nil?
@@ -134,11 +135,11 @@ class Message
 
       answer = @text
       if current_question["post_process"]
-        answer = eval "answer = '#{@text.sub(/'/,'') if @text}';#{current_question["post_process"]}"
+        answer = eval "answer = \"#{@text.gsub(/"/,'') if @text}\";#{current_question["post_process"]}"
       end
 
       @validation_message = if current_question["validation"]
-        eval "answer = '#{answer.sub(/'/,'') if answer}';#{current_question["validation"]}"
+        eval "answer = \"#{answer.sub(/"/,'') if answer}\";#{current_question["validation"]}"
       end
 
       @state["results"].push(
@@ -214,12 +215,12 @@ class Message
   end
 
   def send_message(to,message)
-    puts "Sending #{to}: #{message}"
     if @id #source was an SMS
       $gateway.send_message(
         to,
         message,
         {
+          "from" => @to,
           "linkId" => @linkId,
           "bulkSMSMode" => 0
         }

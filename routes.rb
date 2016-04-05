@@ -123,10 +123,22 @@ end
 
 get "/#{$passwords_and_config["phone_number"]}/incoming" do
   incoming(params)
+
+  #if params["to"] == $passwords_and_config["phone_number"]
+  #  incoming(params)
+  #else
+  #  redirect "http://localhost:8001/40456/incoming"
+  #end
 end
 
 post "/#{$passwords_and_config["phone_number"]}/incoming" do
   incoming(params)
+  #if params["to"] == $passwords_and_config["phone_number"]
+  #  incoming(params)
+  #else
+  #  uri = URI.parse("http://gooseberry.tangerinecentral.org:8001/40456/incoming")
+  #  Net::HTTP.post_form(uri, params)
+  #end
 end
 
 get "/send_reminders/:question_set/:minutes" do |question_set_name,minutes|

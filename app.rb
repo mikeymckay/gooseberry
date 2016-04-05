@@ -12,6 +12,7 @@ require 'date'
 require 'time'
 require 'fuzzy_match'
 require 'sinatra/cross_origin'
+require 'uri'
 
 configure do
   enable :cross_origin

@@ -44,7 +44,14 @@ class AfricasTalkingGateway
     data = nil
     response_code = nil
 
-    post_body = {:username => @user_name, :message => message, :to => recipients, :from => @from}.merge(options)
+    from = @from
+    if options["from"]
+      from = options["from"]
+    end
+
+    puts "Sending from: #{from} to:#{recipients} - #{message}"
+    post_body = {:username => @user_name, :message => message, :to => recipients, :from => from}.merge(options)
+
 
     Curl.post(SMS_URL, post_body) do |curl|
       curl.headers['Accept'] = ACCEPT_TYPE
