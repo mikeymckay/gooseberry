@@ -16,7 +16,6 @@ class QuestionSetResultsView extends Backbone.View
   el: '#content'
 
   render: =>
-    console.debug "ZZZ"
     @$el.html "
       <style>
         .result{
@@ -30,6 +29,9 @@ class QuestionSetResultsView extends Backbone.View
           End Date <input id='endDate' type='date' value='#{@endDate}'></input>
           <br/>
           Row Must Include: <input style='text-transform:uppercase' id='rowMustInclude'></input>
+          <br/>
+          <input id='useAllFields' type='checkbox'>Don't use managed columns(may be useful for older data or when question sets change)</input>
+          <br/>
           <button id='apply'>Apply</button><span id='applyStatus'></span>
         </div>
         <div>Original Results: <span id='numberTotalResults'></span></div>
@@ -69,6 +71,7 @@ class QuestionSetResultsView extends Backbone.View
 
     @resultsView = new ResultsView() unless @resultsView
     @resultsView.csvName = "#{@questionSet.name()}-#{$('#startDate').val()}-#{$('#endDate').val()}#{if @rowMustInclude then "-#{@rowMustInclude}" else ""}.csv"
+    @resultsView.useAllFields = $('#useAllFields').is(":checked")
     @resultsView.setElement(@$el.find("#resultsTable"))
     @resultsView.results = results
     @resultsView.questionSet = new QuestionSet {_id: "TUSOMETEACHER"}

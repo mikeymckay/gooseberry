@@ -29,9 +29,18 @@ class ResultsView extends Backbone.View
       <table id='results'>
         <thead>
           #{
-            _(@questionSet.orderedDataFields()).map (header) ->
-              "<th>#{header}</th>"
-            .join("")
+            if @useAllFields
+              @allFields = _(@results).chain().map (result) ->
+                _(result.value).keys()
+              .flatten().uniq().sort().value()
+
+              _(@allFields).map (field) ->
+                "<th>#{field}</th>"
+              .join("")
+            else
+              _(@questionSet.orderedDataFields()).map (header) ->
+                "<th>#{header}</th>"
+              .join("")
           }
         </thead>
         <tbody>
@@ -47,51 +56,28 @@ class ResultsView extends Backbone.View
         @rowForQuestionSetResult(result)
       .join("")
     )
-    Gooseberry.database.allDocs
-      keys:_(@phoneNumbers).map (phoneNumber) -> "phone_number_#{phoneNumber}"
-      include_docs: true
-    .catch (error) -> console.error error
-    .then (result) ->
-      databaseNumbers = {}
-      _(result.rows).each (row) ->
-        databaseNumbers[row.doc.number] = row.doc.name if row.doc
-
-      tableNumbers = {}
-      _($("tr")).each (tableRow) ->
-        tableName = $(tableRow).find("td:nth-child(1)").text()
-        tableNumber = $(tableRow).find("td:nth-child(2)").text()
-        if databaseNumbers[tableNumber] is tableName
-          $(tableRow).find("td:nth-child(4)").html "YES"
-        else
-          $(tableRow).find("td:nth-child(4)").html "NO"
-        $(tableRow).find("td:nth-child(3)").html databaseNumbers[tableNumber]
-
 
   rowDataForQuestionSetResult: (questionSetResult) =>
-    (@questionSet.orderedDataFields()).map (dataField) ->
-      questionSetResult.value[dataField]
+    if @useAllFields
+      (@allFields).map (dataField) ->
+        questionSetResult.value[dataField]
+    else
+      (@questionSet.orderedDataFields()).map (dataField) ->
+        questionSetResult.value[dataField]
 
   rowForQuestionSetResult: (questionSetResult) =>
-    if @rowMustInclude? then passesFilter = false else passesFilter = true
-
     result = questionSetResult.value
-    row = "
+    @numberOfDisplayedRows += 1
+    "
       <tr id='#{questionSetResult.id}' #{if result.complete isnt true then "class='incomplete'" else ""} >
         #{
           @rowDataForQuestionSetResult(questionSetResult).map (element) =>
             element = element.toUpperCase() if _(element).isString()
-            if passesFilter or (_(element).isString() and element.indexOf(@rowMustInclude) > -1)
-              passesFilter = true
             "<td>#{element or "-"}</td>"
           .join("")
         }
       </tr>
     "
-    if passesFilter
-      @numberOfDisplayedRows += 1
-      row
-    else
-      ""
   csv: =>
     csvString = ""
     _($("table#results thead tr")).each (tr) ->
