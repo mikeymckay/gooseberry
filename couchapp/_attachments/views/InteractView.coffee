@@ -1,3 +1,8 @@
+$ = require 'jquery'
+Backbone = require 'backbone'
+Backbone.$  = $
+_ = require 'underscore'
+
 class InteractView extends Backbone.View
   el: '#content'
 
@@ -45,3 +50,5 @@ class InteractView extends Backbone.View
     "
     $("textarea").val("START #{@name}")
     $("textarea").focus()
+
+module.exports = InteractView

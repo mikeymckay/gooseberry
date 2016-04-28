@@ -7,6 +7,10 @@ def incoming(params)
   return result
 end
 
+get "/incoming" do
+  incoming(params)
+end
+
 get "/#{$passwords_and_config["phone_number"]}/incoming" do
   incoming(params)
 end
@@ -20,7 +24,7 @@ get "/send_reminders/:question_set/:minutes" do |question_set_name,minutes|
 
   result = ""
 
-  $db.view("#{$database_name}/reminders", {
+  $db.view("reminders/reminders", {
     "startkey" => [question_set_name],
     "endkey" => [question_set_name,{}],
     "include_docs" => true

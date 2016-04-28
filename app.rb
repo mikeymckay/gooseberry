@@ -20,10 +20,8 @@ end
 #RestClient.log = 'stdout'
 
 $passwords_and_config = JSON.parse(IO.read("passwords_and_config.json"))
-$database_name = "gooseberry"
-$db = CouchRest.database("http://localhost:5984/#{$database_name}")
-$db_log = CouchRest.database("http://localhost:5984/#{$database_name}-log")
-
+$db = CouchRest.database($passwords_and_config['database_url'])
+$db_log = CouchRest.database("#{$passwords_and_config['database_url']}-log")
 
 class BongoLive
   def send_message(to,message, options)
@@ -48,4 +46,4 @@ require_relative 'ValidationHelpers'
 require_relative 'ZanzibarHelpers'
 require_relative 'QuestionSets'
 require_relative 'routes'
-require_relative 'routes_spreadsheet'
+require_relative 'file_upload'

@@ -1,3 +1,8 @@
+$ = require 'jquery'
+Backbone = require 'backbone'
+Backbone.$  = $
+_ = require 'underscore'
+
 class LogView extends Backbone.View
   el: '#content'
 
@@ -15,3 +20,4 @@ class LogView extends Backbone.View
     _(@logData).each (message) =>
       @addText(message)
 
+module.exports = LogView

@@ -1,7 +1,7 @@
 def get_rows(question_set)
   headers = QuestionSets.report_headers(question_set)
 
-  results = $db.view("#{$database_name}/results_by_question_set", {
+  results = $db.view("results/results_by_question_set", {
     "key" => question_set,
     "include_docs" => false
   })['rows'].map do |result|

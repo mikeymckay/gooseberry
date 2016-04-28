@@ -1,32 +1,24 @@
-Gooseberry = {
-  config:
-    database: "gooseberry"
-    logDatabase: "gooseberry-log"
+global.$ = require 'jquery'
+Backbone = require 'backbone'
+Backbone.$  = $
+BackbonePouch = require 'backbone-pouch'
+global._ = require 'underscore'
+PouchDB = require 'pouchdb'
+PouchDBTools = require './PouchDBTools'
 
-  view: (options) ->
-    $.couch.db(Gooseberry.config.database).view Gooseberry.config.designDoc+"/"+options.name, options
-
-  viewLogDB: (options) ->
-    $.couch.db(Gooseberry.config.logDatabase).view Gooseberry.config.designDoc+"/"+options.name, options
+global.Gooseberry = {
+  database: new PouchDB("http://localhost:5984/gooseberry")
+  logDatabase: new PouchDB("http://localhost:5984/gooseberry-log")
+  #messageTarget: "http://localhost:9393/22340/incoming"
 }
 
+Router = require './Router'
 
-Gooseberry.save = (options) ->
-  $.couch.db(Gooseberry.config.database).saveDoc options.doc, options
+Gooseberry.router = new Router()
 
+Backbone.sync = BackbonePouch.sync
+  db: Gooseberry.database
+  fetch: 'query'
+Backbone.Model.prototype.idAttribute = '_id'
 
-$.couch.db(Gooseberry.config.database).openDoc "config",
-  success: (result) ->
-
-    Gooseberry.config = _(Gooseberry.config).extend result
-    Gooseberry.router = new Router()
-
-    Backbone.couch_connector.config.db_name = Gooseberry.config.database
-    Backbone.couch_connector.config.ddoc_name = Gooseberry.config.designDoc
-#    Backbone.couch_connector.config.global_changes = true
-
-    Backbone.history.start()
-
-Gooseberry.debug = (string) ->
-  console.log string
-  $("#log").append string + "<br/>"
+Backbone.history.start()

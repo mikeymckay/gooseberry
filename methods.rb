@@ -5,7 +5,7 @@ def get_csv(question_set)
     "\"#{question["text"]}\""
   }.join(",")
 
-  results = $db.view("#{$database_name}/results_by_question_set", {
+  results = $db.view("results_by_question_set/results_by_question_set", {
     "key" => question_set,
     "include_docs" => false
   })['rows'].map do |result|

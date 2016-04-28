@@ -1,6 +1,7 @@
 class ValidationHelpers
-  def self.error_from_invalid_kenya_county(county_name)
-    valid_counties = "Mombasa
+    
+  def self.valid_counties
+"Mombasa
 Kwale
 Kilifi
 Tana River
@@ -46,10 +47,21 @@ Homa Bay
 Migori
 Kisii
 Nyamira
-Nairobi City
-    ".split(/\n/).map{|county|county.upcase}
+Nairobi City".split(/\n/).map{|county|county.upcase}
+  end
 
-    return nil if valid_counties.include? county_name.upcase
+  def self.closest_valid_county_match(county_name)
+    return county_name.upcase if self.valid_counties.include? county_name.upcase
+    return FuzzyMatch.new(self.valid_counties).find(county_name.upcase)
+  end
+
+  # Poorly named, but leaving for legacy purposes
+  def self.closest_match(county_name)
+    self.closest_valid_county_match(county_name)
+  end
+
+  def self.error_from_invalid_kenya_county(county_name)
+    return nil if self.valid_counties.include? county_name.upcase
     closest_match = FuzzyMatch.new(valid_counties).find(county_name.upcase)
     return "#{county_name} is not a valid county. Do you mean #{closest_match}?"
 

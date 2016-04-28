@@ -1,0 +1,35 @@
+{
+  "name": "gooseberry",
+  "version": "1.0.0",
+  "description": "SMS Sending/Receiving",
+  "main": "gooseberry.coffee",
+  "scripts": {
+    "start": "npm run watch & npm run livereload & npm run static",
+    "watch": "watchify -v -t coffeeify --debug --extension='.coffee' Gooseberry.coffee -o bundle.js",
+    "livereloadold": "livereloadify ./",
+    "livereload": "livereloadify --glob *.js ./",
+    "static": "static --port 8085 ./"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "backbone": "^1.2.3",
+    "backbone-pouch": "^1.4.0",
+    "blob-stream": "^0.1.3",
+    "brace": "^0.7.0",
+    "coffeeify": "^2.0.1",
+    "datatables.net": "^1.10.11",
+    "filesaverjs": "^0.2.1",
+    "jquery": "^2.2.0",
+    "json2csv": "^3.3.0",
+    "json2csv-stream": "^0.1.3",
+    "livereloadify": "^2.0.0",
+    "mathjs": "^3.2.0",
+    "moment": "^2.13.0",
+    "node-static": "^0.7.7",
+    "pouchdb": "^5.2.0",
+    "static": "^2.0.0",
+    "underscore": "^1.8.3",
+    "watchify": "^3.7.0"
+  }
+}
