@@ -7,6 +7,10 @@ def incoming(params)
   return result
 end
 
+get "/" do
+  redirect $passwords_and_config["login_url"]
+end
+
 get "/incoming" do
   incoming(params)
 end
