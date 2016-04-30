@@ -96,7 +96,7 @@ class Message
     if @text.match(/ /) # configured trigger words don't have spaces
       # default trigger uses word start followed by question set id
       if @text.match(/^Start (.+)/i)
-        result = process_start_triggers($1)
+        result = process_start_triggers($1.upcase)
       end
     else
       # check for a match on configured trigger words
