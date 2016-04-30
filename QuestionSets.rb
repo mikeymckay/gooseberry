@@ -1,7 +1,7 @@
 class QuestionSets
 
   def self.all
-    $db.view("question_set/question_sets", {
+    $db.view("question_sets/question_sets", {
     })['rows'].map{|row| row["key"]}
   end
 

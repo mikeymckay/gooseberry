@@ -23,22 +23,13 @@ $passwords_and_config = JSON.parse(IO.read("passwords_and_config.json"))
 $db = CouchRest.database($passwords_and_config['database_url'])
 $db_log = CouchRest.database("#{$passwords_and_config['database_url']}-log")
 
-class BongoLive
-  def send_message(to,message, options)
-    unless to[0] == "0" or to[0] == "+"
-      to = "+" + to
-    end
-    puts "Send #{to}: #{message}."
-    RestClient.get "http://www.bongolive.co.tz/api/sendSMS.php", {
-      :params  => {
-        :destnum    => to,
-        :message    => message
-      }.merge($passwords_and_config["bongo_credentials"])
-    }
-  end
-end
+require_relative 'AfricasTalkingGateway'
 
-$gateway = BongoLive.new()
+$gateway = AfricasTalkingGateway.new(
+  $passwords_and_config["username"], 
+  $passwords_and_config["api_key"],
+  $passwords_and_config["phone_number"]
+)
 
 require_relative 'reports'
 require_relative 'Message'
