@@ -39,6 +39,6 @@ post '/save_image' do
   rescue
 
   end
-  redirect to("/show/#{filename}.png")
+  redirect to("http://gooseberry.tangerinecentral.org:5984/gooseberry/_design/strawberry/index.html")
   
 end
