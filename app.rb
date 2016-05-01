@@ -12,6 +12,7 @@ require 'date'
 require 'time'
 require 'fuzzy_match'
 require 'sinatra/cross_origin'
+require 'lru_redux' # least recently used cache for duplicate incoming messages
 
 configure do
   enable :cross_origin
@@ -30,6 +31,10 @@ $gateway = AfricasTalkingGateway.new(
   $passwords_and_config["api_key"],
   $passwords_and_config["phone_number"]
 )
+
+# Keep last 10000 messages sent in a cache to check for incoming duplicates
+# See incoming in routes.rb
+$incomingMessageLRUCache = LruRedux::Cache.new(10000)
 
 require_relative 'reports'
 require_relative 'Message'

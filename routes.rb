@@ -1,8 +1,15 @@
 
 def incoming(params)
   puts "#{Time.now} Received: #{params}"
-  message = Message.new(params)
-  result = message.process
+
+  if $incomingMessageLRUCache.has_key?(params.to_s)
+    puts "Already processed #{params}, ignoring"
+    result = ""
+  else
+    $incomingMessageLRUCache[params.to_s] = true
+    message = Message.new(params)
+    result = message.process
+  end
 
   return result
 end
