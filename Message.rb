@@ -187,8 +187,11 @@ class Message
 
       @current_question_index = @state["current_question_index"]
       current_question = @questions[@current_question_index]
-
       answer = @text
+
+      #puts "current question: #{current_question["name"]}"
+      #puts "answer = #{answer}"
+
       if current_question["post_process"]
         answer = eval "answer = '#{@text.sub(/'/,'') if @text}';#{current_question["post_process"]}"
       end
@@ -228,7 +231,7 @@ class Message
     }.compact.join(";") + ";"
 
     # Legacy support requires us to also have the variables in a hash called answers
-    string_to_eval += "result['from'] = '#{@from}'; answers = result"
+    string_to_eval += "result['from'] = '#{@from.gsub(/^254/,'0')}'; answers = result"
 
     string_to_eval
   end
