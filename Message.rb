@@ -54,7 +54,8 @@ class Message
     end
     # Replace all leading spaces
     # Replace two or more spaces with a single space
-    text.gsub(/^ +/, '').gsub(/  +/, ' ')
+    # Replace newlines with space
+    text.gsub(/^ +/, '').gsub(/  +/, ' ').gsub(/\n/,' ')
   end
 
   def default_empty_state
@@ -306,7 +307,9 @@ class Message
   def send_message(to,message)
 
     response = nil
-    if @from != "web"
+    if @from.match(/^web/)
+      response = "#{to}:#{message}"
+    else # source was via web
       response = $gateway.send_message(
         to,
         message,
@@ -315,8 +318,6 @@ class Message
           "bulkSMSMode" => 0
         }
       )
-    else # source was via web
-      response = "#{to}:#{message}"
     end
 
     log_sent_message(to,message,response)

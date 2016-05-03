@@ -11,7 +11,7 @@ def incoming(params)
     result = message.process
   end
 
-  return result
+  return result.to_s
 end
 
 get "/" do
