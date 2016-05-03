@@ -1,15 +1,12 @@
 
 def incoming(params)
-  puts "#{Time.now} Received: #{params}"
 
-  if $incomingMessageLRUCache.has_key?(params.to_s)
-    puts "Already processed #{params}, ignoring"
-    result = ""
-  else
-    $incomingMessageLRUCache[params.to_s] = true
-    message = Message.new(params)
-    result = message.process
-  end
+  puts "#{Time.now} Received: #{params}"
+  message = Message.new(params)
+#  Profiler__.start_profile
+  result = message.process
+#  Profiler__.stop_profile
+#  Profiler__.print_profile(STDOUT)
 
   return result.to_s
 end

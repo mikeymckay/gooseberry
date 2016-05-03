@@ -1,53 +1,55 @@
 class ValidationHelpers
     
   def self.valid_counties
-"Mombasa
-Kwale
-Kilifi
-Tana River
-Lamu
-Taita-Taveta
-Garissa
-wajir
-Mandera
-Marsabit
-Isiolo
-Meru
-Tharaka-Nithi
-Embu
-Kitui
-Machakos
-Makueni
-Nyandarua
-Nyeri
-Kirinyaga
-Murang'a
-Kiambu
-Turkana
-West Pokot
-Samburu
-Trans Nzoia
-Uasin Gishu
-Elgeyo-Marakwet
-Nandi
-Baringo
-Laikipia
-Nakuru
-Narok
-Kajiado
-Kericho
-Bomet
-Kakamega
-Vihiga
-Bungoma
-Busia
-Siaya
-Kisumu
-Homa Bay
-Migori
-Kisii
-Nyamira
-Nairobi City".split(/\n/).map{|county|county.upcase}
+    [
+      "MOMBASA",
+      "KWALE",
+      "KILIFI",
+      "TANA RIVER",
+      "LAMU",
+      "TAITA-TAVETA",
+      "GARISSA",
+      "WAJIR",
+      "MANDERA",
+      "MARSABIT",
+      "ISIOLO",
+      "MERU",
+      "THARAKA-NITHI",
+      "EMBU",
+      "KITUI",
+      "MACHAKOS",
+      "MAKUENI",
+      "NYANDARUA",
+      "NYERI",
+      "KIRINYAGA",
+      "MURANG'A",
+      "KIAMBU",
+      "TURKANA",
+      "WEST POKOT",
+      "SAMBURU",
+      "TRANS NZOIA",
+      "UASIN GISHU",
+      "ELGEYO-MARAKWET",
+      "NANDI",
+      "BARINGO",
+      "LAIKIPIA",
+      "NAKURU",
+      "NAROK",
+      "KAJIADO",
+      "KERICHO",
+      "BOMET",
+      "KAKAMEGA",
+      "VIHIGA",
+      "BUNGOMA",
+      "BUSIA",
+      "SIAYA",
+      "KISUMU",
+      "HOMA BAY",
+      "MIGORI",
+      "KISII",
+      "NYAMIRA",
+      "NAIROBI CITY"
+    ]
   end
 
   def self.closest_valid_county_match(county_name)
