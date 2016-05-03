@@ -193,11 +193,11 @@ class Message
       #puts "answer = #{answer}"
 
       if current_question["post_process"]
-        answer = eval "answer = '#{@text.sub(/'/,'') if @text}';#{current_question["post_process"]}"
+        answer = eval "answer = '#{@text.gsub(/'/,'') if @text}';#{current_question["post_process"]}"
       end
 
       @validation_message = if current_question["validation"]
-        eval "answer = '#{answer.sub(/'/,'') if answer}';#{current_question["validation"]}"
+        eval "answer = '#{answer.gsub(/'/,'') if answer}';#{current_question["validation"]}"
       end
 
       @state["results"].push(
@@ -296,6 +296,14 @@ class Message
   end
 
   def log_sent_message(to,message,response)
+    puts ({
+      "type" => "sent",
+      "to" => to,
+      "from" => @from,
+      "message" => message,
+      "time" => Time.now.strftime("%Y-%m-%d %H:%M:%S.%3N"),
+      "response" => response
+    })
     $db_log.save_doc ({
       "type" => "sent",
       "to" => to,

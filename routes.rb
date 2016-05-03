@@ -1,16 +1,23 @@
 
 def incoming(params)
+
+#  puts "#{Time.now} Received: #{params}"
+#  message = Message.new(params)
+#  result = message.process
+
+
+
   if $incomingMessageLRUCache.has_key?(params.to_s)
-    puts "IGNORING DUPE: #{Time.now} Received: #{params}"
+    puts "IGNORING DUPE: {Time.now} Received: {params}"
     result = ""
   else
-    puts "#{Time.now} Received: #{params}"
+    puts "{Time.now} Received: {params}"
     $incomingMessageLRUCache[params.to_s] = true
     message = Message.new(params)
     result = message.process
   end
 
-  return result
+  return ""
 end
 
 get "/" do

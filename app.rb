@@ -34,7 +34,7 @@ $gateway = AfricasTalkingGateway.new(
 
 # Keep last 10000 messages sent in a cache to check for incoming duplicates
 # See incoming in routes.rb
-$incomingMessageLRUCache = LruRedux::Cache.new(10000)
+$incomingMessageLRUCache = LruRedux::Cache.new(2000)
 
 require_relative 'reports'
 require_relative 'Message'
