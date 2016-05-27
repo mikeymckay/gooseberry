@@ -55,7 +55,8 @@ class Message
     # Replace all leading spaces
     # Replace two or more spaces with a single space
     # Replace newlines with space
-    text.gsub(/^ +/, '').gsub(/  +/, ' ').gsub(/\n/,' ')
+    # # Replace single quote and double quote with nothing
+    text.gsub(/^ +/, '').gsub(/  +/, ' ').gsub(/\n/,' ').gsub(/"/,'').gsub(/'/,'')
   end
 
   def default_empty_state
@@ -198,7 +199,7 @@ class Message
       end
 
       @validation_message = if current_question["validation"]
-        eval "answer = '#{answer.gsub(/'/,'') if answer}';#{current_question["validation"]}"
+        eval "#{values_for_interpolation};answer = '#{answer.gsub(/'/,'') if answer}';#{current_question["validation"]}"
       end
 
       @state["results"].push(
@@ -253,7 +254,7 @@ class Message
 
       @state["current_question_index"] = @current_question_index
       message = @questions[@current_question_index]["text"]
-      # Allows you to be able to refer to results["name_of_question"] in message
+      # Allows you to be able to refer to result["name_of_question"] in message
     
       message = eval "#{values_for_interpolation};\"#{message}\"" # Allows you to dynamically change the text of the message
       message = "#{@validation_message} #{message}" if @validation_message
@@ -293,7 +294,12 @@ class Message
 
   def save_state
     @state["updated_at"] = Time.now.to_s
-    @state = $db.save_doc(@state)
+    begin
+      @state = $db.save_doc(@state)
+    rescue Exception => e
+      STDERR.puts "Error saving #{@state}: #{e.message}"
+    end
+    return @state
   end
 
   def log_sent_message(to,message,response)
@@ -321,7 +327,7 @@ class Message
     if @from.match(/^web/)
       response = "#{to}:#{message}"
     else # source was via web
-      response = $gateway.send_message(
+      response = $gateways[@to].send_message(
         to,
         message,
         {

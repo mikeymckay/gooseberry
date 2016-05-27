@@ -1,4 +1,12 @@
 class ValidationHelpers
+
+  def self.closest_animal(animal)
+    FuzzyMatch.new(JSON.parse(IO.read("animals.json"))).find(animal)
+  end
+
+  def self.closest_city(city)
+    FuzzyMatch.new(JSON.parse(IO.read("countriesToCities.json")).values.flatten).find(city)
+  end
     
   def self.valid_counties
     [

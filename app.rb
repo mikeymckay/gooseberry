@@ -27,15 +27,16 @@ $db_log = CouchRest.database("#{$passwords_and_config['database_url']}-log")
 
 require_relative 'AfricasTalkingGateway'
 
-$gateway = AfricasTalkingGateway.new(
-  $passwords_and_config["username"], 
-  $passwords_and_config["api_key"],
-  $passwords_and_config["phone_number"]
-)
+$gateways = {}
+$passwords_and_config["gateways"].each do |gateway|
+  $gateways[gateway["phone_number"]] = AfricasTalkingGateway.new(
+    gateway["username"], 
+    gateway["api_key"],
+    gateway["phone_number"]
+  )
+end
 
-# Keep last 10000 messages sent in a cache to check for incoming duplicates
-# See incoming in routes.rb
-# $incomingMessageLRUCache = LruRedux::Cache.new(2000)
+puts $gateways
 
 require_relative 'reports'
 require_relative 'Message'

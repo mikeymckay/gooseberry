@@ -19,11 +19,11 @@ get "/incoming" do
   incoming(params)
 end
 
-get "/#{$passwords_and_config["phone_number"]}/incoming" do
+get "/:phone_number/incoming" do
   incoming(params)
 end
 
-post "/#{$passwords_and_config["phone_number"]}/incoming" do
+post "/:phone_number/incoming" do
   incoming(params)
 end
 

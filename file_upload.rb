@@ -19,9 +19,9 @@ post '/save_image' do
 
   full_path_file = "#{pwd}/public/#{filename}"
 
-  `convert -resize 1024x1024\\> #{full_path_file}.img #{full_path_file}.png`
+  `convert -resize 1024x1024\\> "#{full_path_file}.img" "#{full_path_file}.png"`
 #TODO check result before deleting
-  `rm  #{full_path_file}.img`
+  `rm  "#{full_path_file}.img"`
   begin
     $db.save_doc ({
       "_id" => "image-#{filename}",
