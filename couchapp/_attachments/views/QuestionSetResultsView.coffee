@@ -82,6 +82,8 @@ class QuestionSetResultsView extends Backbone.View
   apply: =>
     @rowMustInclude = $("#rowMustInclude").val().toUpperCase()
     if @rowMustInclude is "" then @rowMustInclude = null
+    startDate = $("#startDate").val()
+    endDate = $("#endDate").val()
     if startDate isnt @startDate or endDate isnt @endDate
       @queryResults
         error: (error) -> console.error error
