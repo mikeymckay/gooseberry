@@ -32,7 +32,7 @@ class QuestionSetResultsView extends Backbone.View
           <br/>
           <input id='useAllFields' type='checkbox'>Don't use managed columns(may be useful for older data or when question sets change)</input>
           <br/>
-          <button id='apply'>Apply</button><span id='applyStatus'></span>
+          <button type='button' id='apply'>Apply</button><span id='applyStatus'></span>
         </div>
         <div>Original Results: <span id='numberTotalResults'></span></div>
         <div>Filtered Results: <span id='numberFilteredResults'></span></div>
@@ -41,8 +41,6 @@ class QuestionSetResultsView extends Backbone.View
       </div>
     "
     @queryResults
-      startDate: @startDate
-      endDate: @endDate
       error: (error) -> console.error error
       success: (@databaseResults) =>
         @renderResults(@databaseResults)
@@ -74,11 +72,8 @@ class QuestionSetResultsView extends Backbone.View
     @resultsView.useAllFields = $('#useAllFields').is(":checked")
     @resultsView.setElement(@$el.find("#resultsTable"))
     @resultsView.results = results
-    @resultsView.questionSet = new QuestionSet {_id: "TUSOMETEACHER"}
-    @resultsView.questionSet.fetch
-      error: (error) -> console.error error
-      success: () =>
-        @resultsView.render()
+    @resultsView.questionSet = @questionSet
+    @resultsView.render()
 
   applyFiltersAndRender: (resultsToFilter) =>
     @filteredResults = @filterResults(resultsToFilter)
@@ -87,14 +82,13 @@ class QuestionSetResultsView extends Backbone.View
   apply: =>
     @rowMustInclude = $("#rowMustInclude").val().toUpperCase()
     if @rowMustInclude is "" then @rowMustInclude = null
-    startDate = $("#startDate").val()
-    endDate = $("#endDate").val()
     if startDate isnt @startDate or endDate isnt @endDate
       @queryResults
-        startDate: startDate
-        endDate: endDate
         error: (error) -> console.error error
         success: (@filteredResults) =>
+          Gooseberry.router.navigate "#question_set/#{@questionSet.name()}/results/#{startDate}/#{endDate}"
+          @startDate = startDate
+          @endDate = endDate
           @applyFiltersAndRender(@filteredResults)
     else
       @applyFiltersAndRender(@databaseResults)

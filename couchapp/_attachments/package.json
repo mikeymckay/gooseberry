@@ -5,10 +5,10 @@
   "main": "gooseberry.coffee",
   "scripts": {
     "start": "npm run watch & npm run livereload & npm run static",
-    "watch": "watchify -v -t coffeeify --debug --extension='.coffee' Gooseberry.coffee -o bundle.js",
+    "watch": "./node_modules/watchify/bin/cmd.js -v -t coffeeify --debug --extension='.coffee' Gooseberry.coffee -o bundle.js",
     "livereloadold": "livereloadify ./",
-    "livereload": "livereloadify --glob *.js ./",
-    "static": "static --port 8085 ./"
+    "livereload": "./node_modules/livereloadify/cli.js --glob *.js ./",
+    "static": "./node_modules/node-static/bin/cli.js --port 8095 ./"
   },
   "author": "",
   "license": "ISC",
@@ -17,6 +17,7 @@
     "backbone-pouch": "^1.4.0",
     "blob-stream": "^0.1.3",
     "brace": "^0.7.0",
+    "browserify": "~13.0.0",
     "coffeeify": "^2.0.1",
     "datatables.net": "^1.10.11",
     "filesaverjs": "^0.2.1",
@@ -29,9 +30,8 @@
     "node-static": "^0.7.7",
     "pouchdb": "^5.2.0",
     "static": "^2.0.0",
-    "underscore": "^1.8.3",
-    "watchify": "^3.7.0",
     "uglifyjs": "~2.4.10",
-    "browserify": "~13.0.0"
+    "underscore": "^1.8.3",
+    "watchify": "^3.7.0"
   }
 }

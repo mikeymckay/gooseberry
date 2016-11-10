@@ -36,6 +36,7 @@ class QuestionSet extends Backbone.Model
       include_docs: false
       reduce: true
       group_level: 1
+      stale: "update_after"
     .catch (error) -> console.error error
     .then (result) =>
       count = result.rows[0]?.value or 0

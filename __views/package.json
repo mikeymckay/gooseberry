@@ -1,0 +1,16 @@
+{
+  "name": "views",
+  "version": "1.0.0",
+  "description": "This directory holds couchdb map/reduce views. The couchapp utility puts all views in the same design document. This is not a good idea, since any change to any view requires all views to be rebuilt. Better to have each view in it's own design document. See this:",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "glob": "^7.1.1",
+    "request": "^2.78.0",
+    "underscore": "^1.8.3"
+  }
+}

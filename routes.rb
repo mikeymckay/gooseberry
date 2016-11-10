@@ -3,10 +3,7 @@ def incoming(params)
 
   puts "#{Time.now} Received: #{params}"
   message = Message.new(params)
-#  Profiler__.start_profile
   result = message.process
-#  Profiler__.stop_profile
-#  Profiler__.print_profile(STDOUT)
 
   return result.to_s
 end

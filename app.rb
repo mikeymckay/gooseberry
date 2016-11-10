@@ -12,7 +12,6 @@ require 'date'
 require 'time'
 require 'fuzzy_match'
 require 'sinatra/cross_origin'
-#require 'lru_redux' # least recently used cache for duplicate incoming messages
 #require 'profiler'
 
 configure do
@@ -35,8 +34,6 @@ $passwords_and_config["gateways"].each do |gateway|
     gateway["phone_number"]
   )
 end
-
-puts $gateways
 
 require_relative 'reports'
 require_relative 'Message'

@@ -108,6 +108,7 @@ class QuestionSetCollectionView extends Backbone.View
                   <tr data-name='#{questionSet.name()}'>
                     <td class='name clickable'>#{questionSet.name()}</td>
                     <td class='clickable number-of-results'></td>
+                    <td><small><button><a style='text-decoration:none;color:black' href='#question_set/#{questionSet.name()}/results'>results</a></button></small></td>
                     <td><small><button id='interact'>interact</button></small></td>
                     <td><small><button id='delete'>x</button></small></td>
                     <td><small><button id='copy'>copy</button></small></td>
@@ -118,9 +119,14 @@ class QuestionSetCollectionView extends Backbone.View
             </tbody>
           </table>
         "
-        @questionSets.each (questionSet) ->
-          questionSet.resultCount
-            success: (count) ->
-              $("tr[data-name='#{questionSet.name()}'] td.number-of-results").html count
+        Gooseberry.database.query "results_by_question_set_and_date",
+          reduce: true
+          include_docs: false
+          group_level: 1
+          stale: "update_after"
+        .catch (error) -> console.error error
+        .then (result) ->
+          _(result.rows).each (row) ->
+            $("tr[data-name='#{row.key}'] td.number-of-results").html row.value
 
 module.exports = QuestionSetCollectionView

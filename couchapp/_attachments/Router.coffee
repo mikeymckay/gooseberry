@@ -26,7 +26,34 @@ class Router extends Backbone.Router
     "question_set/:name/results": "questionSetResults"
     "question_set/:name/results/:startDate/:endDate": "questionSetResults"
     "interact/:name": "interact"
+    "recent/messages": "recentMessages"
     '*invalidRoute' : 'showErrorPage'
+
+  recentMessages: ->
+    $("#content").html "
+      <table>
+      </table>
+
+    "
+    Gooseberry.logDatabase.changes
+      limit: 10
+      live: true
+      since: "now"
+      include_docs: true
+      descending: true
+    .on "change", (change) ->
+      console.log change
+      console.log "FOO"
+      $("#content table").append "
+        <tr>
+          <td>
+            #{change.doc.type}
+          </td>
+          <td>
+            #{change.doc.message}
+          </td>
+        </tr>
+      "
 
   interact: (name) ->
     target = document.location.hash.substring(document.location.hash.indexOf('=')+1)
