@@ -1,5 +1,7 @@
 class ValidationHelpers
 
+  $tot_participants_db = CouchRest.database("http://localhost:5984/tot_participants_2016_12")
+
   def self.closest_animal(animal)
     FuzzyMatch.new(JSON.parse(IO.read("animals.json"))).find(animal)
   end
@@ -74,6 +76,15 @@ class ValidationHelpers
     return nil if self.valid_counties.include? county_name.upcase
     closest_match = FuzzyMatch.new(valid_counties).find(county_name.upcase)
     return "#{county_name} is not a valid county. Do you mean #{closest_match}?"
+  end
 
+  def self.tot_participant_info(tot_code)
+    $tot_participants_db.get(tot_code)
+  end
+
+  def self.tot_participant_info_string(tot_code)
+    result = $tot_participants_db.get(tot_code)
+    return "No Match" unless result
+    "#{result['TOT Code']}: #{result['Name']}, #{result['Organization']}, #{result['Designation']}, #{result['County']}, #{result['Job Group']}"
   end
 end
