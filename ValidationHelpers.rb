@@ -1,6 +1,7 @@
 class ValidationHelpers
 
   $tot_participants_db = CouchRest.database("http://localhost:5984/tot_participants_2016_12")
+  $cso_gcode_db = CouchRest.database("http://localhost:5984/cso_gcodes_2016_12")
 
   def self.closest_animal(animal)
     FuzzyMatch.new(JSON.parse(IO.read("animals.json"))).find(animal)
@@ -86,5 +87,15 @@ class ValidationHelpers
     result = $tot_participants_db.get(tot_code)
     return "No Match" unless result
     "#{result['TOT Code']}: #{result['Name']}, #{result['Organization']}, #{result['Designation']}, #{result['County']}, #{result['Job Group']}"
+  end
+
+  def self.cso_gcode_lookup(gcode)
+    $cso_gcode_db.get(gcode)
+  end
+
+  def self.cso_gcode_string(gcode)
+    result = $cso_gcode_db.get(gcode)
+    return "No Match: #{gcode}" unless result
+    "[#{result['_id']}] County: #{result['County']}, Zone: #{result['Zone']}, Training Centre: #{result['Training Centre Code']}"
   end
 end
