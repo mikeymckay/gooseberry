@@ -83,8 +83,11 @@ class ValidationHelpers
   end
 
   def self.tot_participant_info_string(tot_code)
-    result = $tot_participants_db.get(tot_code)
-    return "No Match" unless result
+    begin
+      result = $tot_participants_db.get(tot_code)
+    rescue
+      return "No Match"
+    end
     "#{result['TOT Code']}: #{result['Name']}, #{result['Organization']}, #{result['Designation']}, #{result['County']}, #{result['Job Group']}"
   end
 end

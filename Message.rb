@@ -145,9 +145,10 @@ class Message
       end
 
       use_previous_results = question_set["use_previous_results"]
-      if use_previous_results
-        @previous_results = relevant_previous_results.map{ |question, answer|
-          question = question.sub(/^\d+\/\d+ */,"")
+      prev_results = relevant_previous_results
+      if use_previous_results and prev_results
+        @previous_results = prev_results.map{ |question, answer|
+          question = question.sub(/^\d+\/\d+ */,"") # remove 1/10  2/8 etc
           "#{question.humanize()}: #{answer}"
         }.join(", ")
       else
@@ -406,7 +407,7 @@ class Message
 
   def relevant_previous_results
     return_val = relevant_previous_results_with_updated_at()
-    return_val.delete("updated_at")
+    return_val.delete("updated_at") if return_val
     return_val
   end
 

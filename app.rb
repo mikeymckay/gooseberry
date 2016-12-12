@@ -1,5 +1,5 @@
 require 'rubygems'
-require 'bundler/setup'
+#require 'bundler/setup'
 require 'sinatra'
 require 'couchrest'
 require 'rest-client'
@@ -20,7 +20,7 @@ configure do
   enable :cross_origin
 end
 
-RestClient.log = 'stdout'
+#RestClient.log = 'stdout'
 
 $passwords_and_config = JSON.parse(IO.read("passwords_and_config.json"))
 $db = CouchRest.database($passwords_and_config['database_url'])
