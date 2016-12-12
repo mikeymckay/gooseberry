@@ -97,8 +97,11 @@ class ValidationHelpers
   end
 
   def self.cso_gcode_string(gcode)
-    result = $cso_gcode_db.get(gcode)
-    return "No Match: #{gcode}" unless result
+    begin
+      result = $cso_gcode_db.get(gcode)
+    rescue
+      return "No Match: #{gcode}" unless result
+    end
     "[#{result['_id']}] County: #{result['County']}, Zone: #{result['Zone']}, Training Centre: #{result['Training Centre Code']}"
   end
 end
