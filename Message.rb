@@ -145,12 +145,16 @@ class Message
       end
 
       use_previous_results = question_set["use_previous_results"]
-      prev_results = relevant_previous_results
-      if use_previous_results and prev_results
-        @previous_results = prev_results.map{ |question, answer|
-          question = question.sub(/^\d+\/\d+ */,"") # remove 1/10  2/8 etc
-          "#{question.humanize()}: #{answer}"
-        }.join(", ")
+      if use_previous_results
+        prev_results = relevant_previous_results
+        if prev_results
+          @previous_results = prev_results.map{ |question, answer|
+            question = question.sub(/^\d+\/\d+ */,"") # remove 1/10  2/8 etc
+            "#{question.humanize()}: #{answer}"
+          }.join(", ")
+        else
+          @previous_results = nil
+        end
       else
         @previous_results = nil
       end
