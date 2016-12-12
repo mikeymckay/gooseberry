@@ -143,6 +143,17 @@ class Message
           return false
         end
       end
+
+      use_previous_results = question_set["use_previous_results"]
+      if use_previous_results
+        @previous_results = relevant_previous_results.map{ |question, answer|
+          question = question.sub(/^\d+\/\d+ */,"")
+          "#{question.humanize()}: #{answer}"
+        }.join(", ")
+      else
+        @previous_results = nil
+      end
+
     end
 
   end
@@ -181,6 +192,12 @@ class Message
     @state["current_question_index"].nil?
   end
 
+  def validation_message(validation_logic, answer)
+    return (if validation_logic
+      eval "#{values_for_interpolation};answer = '#{answer.gsub(/'/,'') if answer}';#{validation_logic}"
+    end)
+  end
+
   def process_answer
     @validation_message = nil
     @current_question_index = -1
@@ -198,9 +215,7 @@ class Message
         answer = eval "answer = '#{@text.gsub(/'/,'') if @text}';#{current_question["post_process"]}"
       end
 
-      @validation_message = if current_question["validation"]
-        eval "#{values_for_interpolation};answer = '#{answer.gsub(/'/,'') if answer}';#{current_question["validation"]}"
-      end
+      @validation_message = validation_message(current_question["validation"], answer)
 
       @state["results"].push(
         {
@@ -243,6 +258,13 @@ class Message
     @current_question_index += 1
 
     if @questions[@current_question_index]
+
+      if (@state["results"].find do |result|
+        (result["question_name"] == @questions[@current_question_index]["name"] or result["question"] == @questions[@current_question_index]["text"]) and result["valid"] == true
+      end)
+        puts "Skipping #{@questions[@current_question_index]}"
+        return send_next_message()
+      end
 
       skip_if = @questions[@current_question_index]["skip_if"]
       # Creates a hash called answers that enables you to insert previous results into the response
@@ -363,6 +385,75 @@ class Message
     }["answer"]
   end
 
+  ###
+  # For reusing previous answers
+  ###
+
+  def last_question_set_response
+    result = $db.view("complete_results_by_question_set_and_phone_number_and_date/complete_results_by_question_set_and_phone_number_and_date", {
+      "startkey" => [@state["question_set"], @from, {}],
+      "endkey" => [@state["question_set"], @from],
+      "limit" => 1,
+      "descending" => true,
+      "include_docs" => false
+    })['rows']
+    if result.length == 1
+      return result[0]
+    else
+      return nil
+    end
+  end
+
+  def relevant_previous_results
+    return_val = relevant_previous_results_with_updated_at()
+    return_val.delete("updated_at")
+    return_val
+  end
+
+  def relevant_previous_results_with_updated_at
+    last_response = self.last_question_set_response()
+    if last_response
+      return last_response['value'].reject do |question, answer|
+        QuestionSets.get_question_set(@state["question_set"])["exclude_from_previous_results"].include?(question)
+      end
+    end
+  end
+
+  def load_previous_results_if_confirmed(confirmed)
+    # set @state to have the previous data loaded
+    return false if confirmed == 'N'
+
+    question_set = QuestionSets.get_question_set(@state["question_set"])
+
+    previous_results = relevant_previous_results_with_updated_at()
+
+    previous_results.each do |question, answer|
+      next if question == "updated_at"
+
+      question_index = -1 # This needs to be -1 so that the first index will be 0
+      question_in_question_set = question_set["questions"].find do |question_set_question|
+        question_index+=1
+        question_set_question["name"] == question or question_set_question["text"] == question
+      end
+
+      puts "Couldn't match previous question: #{question} with current questions: #{question_set["questions"]}\n so skipping it and will re-ask" if question_in_question_set.nil?
+      next if question_in_question_set.nil?
+
+      next unless validation_message(question_in_question_set["validation"], answer).nil?
+
+      @state["results"].push({
+        "question_index" => question_index,
+        "question_name" => question_in_question_set["name"],
+        "question" => question_in_question_set["text"],
+        "answer" => answer,
+        "valid" => @validation_message ? @validation_message : true,
+        "datetime" => previous_results['updated_at'],
+        "source" => "previous_results"
+      })
+    end
+    return nil
+
+  end
 
 end
 

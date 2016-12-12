@@ -1,9 +1,11 @@
 #! /usr/bin/env ruby
 require 'rubygems'
+require 'bundler/setup'
 require 'couchrest'
 require 'json'
 
-@db = CouchRest.new(ARGV[0]).database!(ARGV[1])
+#@db = CouchRest.new(ARGV[0]).database!(ARGV[1])
+@db = CouchRest.new(ARGV[0]).database!("gooseberry")
 
 #Get all .coffee files
 Dir.glob("*.coffee").each do |view|

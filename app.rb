@@ -1,4 +1,5 @@
 require 'rubygems'
+require 'bundler/setup'
 require 'sinatra'
 require 'couchrest'
 require 'rest-client'
@@ -12,13 +13,14 @@ require 'date'
 require 'time'
 require 'fuzzy_match'
 require 'sinatra/cross_origin'
+require 'active_support/inflector'
 #require 'profiler'
 
 configure do
   enable :cross_origin
 end
 
-#RestClient.log = 'stdout'
+RestClient.log = 'stdout'
 
 $passwords_and_config = JSON.parse(IO.read("passwords_and_config.json"))
 $db = CouchRest.database($passwords_and_config['database_url'])
@@ -42,3 +44,4 @@ require_relative 'ZanzibarHelpers'
 require_relative 'QuestionSets'
 require_relative 'routes'
 require_relative 'file_upload'
+require_relative 'ReuseDataHelpers'
