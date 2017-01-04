@@ -2,6 +2,8 @@ class ValidationHelpers
 
   $tot_participants_db = CouchRest.database("http://localhost:5984/tot_participants_2016_12")
   $cso_gcode_db = CouchRest.database("http://localhost:5984/cso_gcodes_2016_12")
+  $tusome_teacher_code_db = CouchRest.database("http://localhost:5984/tusometeacher_codes_2017_1")
+  $tusome_apbet_code_db = CouchRest.database("http://localhost:5984/tusomeapbet_codes_2017_1")
 
   def self.closest_animal(animal)
     FuzzyMatch.new(JSON.parse(IO.read("animals.json"))).find(animal)
@@ -104,4 +106,28 @@ class ValidationHelpers
     end
     "[#{result['_id']}] County: #{result['County']}, Zone: #{result['Zone']}, Training Centre: #{result['Training Centre Code']}"
   end
+
+
+  def self.tusometeacher_code_string(tusome_code)
+    begin
+      result = $tusome_teacher_code_db.get(tusome_code)
+    rescue
+      return "No Match: #{tusome_code}" unless result
+    end
+    "[#{result['_id']}] County: #{result['County']}, Zone: #{result['Zone']}, School Name: #{result['School Name']}"
+  end
+
+  def self.tusomeapbet_code_string(tusome_code)
+    begin
+      result = $tusome_apbet_code_db.get(tusome_code)
+    rescue
+      return "No Match: #{tusome_code}" unless result
+    end
+    "[#{result['_id']}] County: #{result['County']}, Cluster: #{result['Cluster']}, School Name: #{result['School Name']}"
+  end
+
+
+
+
+
 end
