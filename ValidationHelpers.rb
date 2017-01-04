@@ -114,6 +114,9 @@ class ValidationHelpers
     rescue
       return "No Match: #{tusome_code}" unless result
     end
+    if result.nil?
+      return "No Match: #{tusome_code}" unless result
+    end
     "[#{result['_id']}] County: #{result['County']}, Zone: #{result['Zone']}, School Name: #{result['School Name']}"
   end
 
@@ -121,6 +124,9 @@ class ValidationHelpers
     begin
       result = $tusome_apbet_code_db.get(tusome_code)
     rescue
+      return "No Match: #{tusome_code}" unless result
+    end
+    if result.nil?
       return "No Match: #{tusome_code}" unless result
     end
     "[#{result['_id']}] County: #{result['County']}, Cluster: #{result['Cluster']}, School Name: #{result['School Name']}"

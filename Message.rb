@@ -215,6 +215,7 @@ class Message
 
       #puts "current question: #{current_question["name"]}"
       #puts "answer = #{answer}"
+      #puts "answer = '#{@text.gsub(/'/,'') if @text}';#{current_question["post_process"]}"
 
       if current_question["post_process"]
         answer = eval "answer = '#{@text.gsub(/'/,'') if @text}';#{current_question["post_process"]}"

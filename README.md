@@ -59,3 +59,13 @@ Currently the available properties include:
 * **validation** - ruby code that will run against the reply to the question. If nil is returned then validation passes, otherwise the returned string will be used as the error message sent back to the user.
 * **name** - variable name for the result. used for referring to the result of a previously answered question (within the same session) from skip_if statements, and also in the spreadsheet of results
 * **skip_if** - ruby code. if result of eval'ing the code is true it will skip the question. Results from previously answered questions can be found by using the 'answers' hash which is populated using the name variable of the corresponding question.
+
+
+### Question Set Options
+
+In addition to the options described above which are question oriented, there are other options used to manage other behavior of the question set:
+
+* **image_meta_data** - used to define what data to associate a response with an image (for example a scan of an attendance sheet) (see TUSOMETEACHER for example with cascading selects)
+* **use_previous_results** - if a phone number already has a completed question set, then the previous results can be used to avoid retyping in the same infomration (for example the name can be pre-populated) (see TUSOMECSO for example)
+* **exclude_from_previous_results** - which data elements from previous results should be ignored and re-asked even if the answer from last time is available.
+* **complete_message** - the message to send when a question set is completed. Can use #{result['question_name']} to insert data into the message
