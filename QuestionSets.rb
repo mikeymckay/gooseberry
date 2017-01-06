@@ -2,6 +2,7 @@ class QuestionSets
 
   def self.all
     $db.view("question_sets/question_sets", {
+      "stale" => "update_after"
     })['rows'].map{|row| row["key"]}
   end
 
