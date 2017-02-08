@@ -132,23 +132,29 @@ class ValidationHelpers
     "[#{result['_id']}] County: #{result['County']}, Cluster: #{result['Cluster']}, School Name: #{result['School Name']}"
   end
 
-  def self.cso_county_zone(phone_number)
+  def self.add_data(message, view)
     begin
-      result = $db.view("county_zone_by_cso_phone_number", {
-        "key" => phone_number,
+      result = $db.view("#{view}/#{view}", {
+        "key" => message.from(),
         "include_docs" => false,
         "limit" => 1
       })['rows'][0]
-    rescue
+    rescue Exception => e
+      puts e.to_yaml
       return "No Match" unless result
     end
     if result.nil?
+      puts "No match"
       return "No Match" unless result
     end
-    "County: #{result.value[1]}, Zone: #{result.value[1]}"
+    message.add_and_save_results(result["value"].map{ |property,value|
+      {
+        "question_name" => property,
+        "answer" => value,
+        "valid" => true
+      }
+    })
   end
-
-
 
 
 end

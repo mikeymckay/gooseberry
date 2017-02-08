@@ -391,6 +391,12 @@ class Message
     }["answer"]
   end
 
+  def add_and_save_results(results)
+    @state["results"] += results
+    #save_state()
+  end
+  
+
   ###
   # For reusing previous answers
   ###
