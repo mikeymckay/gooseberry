@@ -132,6 +132,21 @@ class ValidationHelpers
     "[#{result['_id']}] County: #{result['County']}, Cluster: #{result['Cluster']}, School Name: #{result['School Name']}"
   end
 
+  def self.cso_county_zone(phone_number)
+    begin
+      result = $db.view("county_zone_by_cso_phone_number", {
+        "key" => phone_number,
+        "include_docs" => false,
+        "limit" => 1
+      })['rows'][0]
+    rescue
+      return "No Match" unless result
+    end
+    if result.nil?
+      return "No Match" unless result
+    end
+    "County: #{result.value[1]}, Zone: #{result.value[1]}"
+  end
 
 
 

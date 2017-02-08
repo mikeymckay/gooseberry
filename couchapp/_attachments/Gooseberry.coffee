@@ -7,7 +7,7 @@ PouchDB = require 'pouchdb'
 PouchDBTools = require './PouchDBTools'
 
 global.Gooseberry = {
-  database: new PouchDB("http://localhost:5984/gooseberry")
+  database: new PouchDB("http://localhost:8012/gooseberry")
   logDatabase: new PouchDB("http://localhost:5984/gooseberry-log")
   messageTarget: "http://localhost:9393/22340/incoming"
   #messageTarget: "http://gooseberry.tangerinecentral.org/22340/incoming"
