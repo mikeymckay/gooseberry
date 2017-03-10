@@ -29,6 +29,7 @@ $db_log = CouchRest.database("#{$passwords_and_config['database_url']}-log")
 require_relative 'AfricasTalkingGateway'
 
 $gateways = {}
+
 $passwords_and_config["gateways"].each do |gateway|
   $gateways[gateway["phone_number"]] = AfricasTalkingGateway.new(
     gateway["username"], 
@@ -36,6 +37,7 @@ $passwords_and_config["gateways"].each do |gateway|
     gateway["phone_number"]
   )
 end
+
 
 require_relative 'reports'
 require_relative 'Message'
