@@ -435,11 +435,30 @@ class Message
     # set @state to have the previous data loaded
     return false if confirmed == 'N'
 
-    question_set = QuestionSets.get_question_set(@state["question_set"])
-
     previous_results = relevant_previous_results_with_updated_at()
 
-    previous_results.each do |question, answer|
+    load_results(previous_results)
+
+    return nil
+  end
+
+  def load_results_from_code(database_name, code)
+    begin
+      results = CouchRest.database("http://localhost:5984/#{database_name}").get(code)
+    rescue
+      puts "Could not find result for #{code} in #{database_name}"
+      return nil
+    end
+
+    # Skip _id and _rev but treat the property name as the question name and load it
+    load_results(results.reject{|property,value| property.start_with?('_') })
+    return nil
+  end
+
+  def load_results(results)
+    question_set = QuestionSets.get_question_set(@state["question_set"])
+
+    results.each do |question, answer|
       next if question == "updated_at"
 
       question_index = -1 # This needs to be -1 so that the first index will be 0
@@ -462,10 +481,10 @@ class Message
         "datetime" => previous_results['updated_at'],
         "source" => "previous_results"
       })
+      puts @state.to_yaml
     end
-    return nil
-
   end
+
 
 end
 

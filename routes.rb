@@ -40,7 +40,7 @@ def process_queue(params)
   end
 
   load_average = File.read("/proc/loadavg")[0..2].to_f
-  puts "Processing queue, current load: #{load_average}, size: #{$message_queue.length}"
+  puts "Processing queue, current load: #{load_average}, size: #{$message_queue.length}" if $message_queue.length > 1
 
   if load_average > LOAD_THRESHOLD
     send_queued_message if params
