@@ -29,15 +29,21 @@ class Message
   end
 
   def process
-    set_most_recent_state
-    return unless process_triggers
-    set_questions
-    process_answer
-    result = send_next_message
-    # TODO check result to make sure message was sent before saving state
-    complete_action if complete?
-    save_state
-    return result
+    begin 
+      set_most_recent_state
+      return unless process_triggers
+      set_questions
+      process_answer
+      result = send_next_message
+      # TODO check result to make sure message was sent before saving state
+      complete_action if complete?
+      save_state
+      return result
+    rescue Exception => e
+      return "Error while processing:"
+      puts e.to_yaml
+      puts e.backtrace.inspect
+    end
   end
 
   def complete_action
@@ -437,36 +443,41 @@ class Message
 
     previous_results = relevant_previous_results_with_updated_at()
 
-    load_results(previous_results)
+    load_results(previous_results, previous_results['updated_at'], "previous_results")
 
     return nil
   end
 
-  def load_results_from_code(database_name, code)
+  def load_results_from_database_doc(database_name, doc_id)
+    puts "Loading results from code"
     begin
-      results = CouchRest.database("http://localhost:5984/#{database_name}").get(code)
+      results = CouchRest.database("http://localhost:5984/#{database_name}").get(doc_id).to_hash
     rescue
-      puts "Could not find result for #{code} in #{database_name}"
-      return nil
+      puts "Could not find result for #{doc_id} in #{database_name}"
+      return doc_id
     end
 
     # Skip _id and _rev but treat the property name as the question name and load it
-    load_results(results.reject{|property,value| property.start_with?('_') })
-    return nil
+    results = results.reject{|property,value| property.start_with?('_') }
+
+    load_results(results.reject{|property,value| property.start_with?('_') }, Time.now.to_s , "#{database_name}:#{doc_id}")
+    return doc_id
   end
 
-  def load_results(results)
+  def load_results(results, datetime, source)
+    puts "Loading results: #{results}"
     question_set = QuestionSets.get_question_set(@state["question_set"])
+
 
     results.each do |question, answer|
       next if question == "updated_at"
+      next if answer.nil?
 
       question_index = -1 # This needs to be -1 so that the first index will be 0
       question_in_question_set = question_set["questions"].find do |question_set_question|
         question_index+=1
         question_set_question["name"] == question or question_set_question["text"] == question
       end
-
       puts "Couldn't match previous question: #{question} with current questions: #{question_set["questions"]}\n so skipping it and will re-ask" if question_in_question_set.nil?
       next if question_in_question_set.nil?
 
@@ -478,10 +489,9 @@ class Message
         "question" => question_in_question_set["text"],
         "answer" => answer,
         "valid" => @validation_message ? @validation_message : true,
-        "datetime" => previous_results['updated_at'],
-        "source" => "previous_results"
+        "datetime" => datetime,
+        "source" => source
       })
-      puts @state.to_yaml
     end
   end
 
