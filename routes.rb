@@ -56,7 +56,7 @@ def process_queue(params)
 
     if $message_queue.length > 0
       send_queued_message if params
-      puts "#{$message_queue.len  gth} messages in the START message queue"
+      puts "#{$message_queue.length} messages in the START message queue"
       return "Message queued"
     else
       return last_result.to_s

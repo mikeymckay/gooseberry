@@ -156,5 +156,27 @@ class ValidationHelpers
     })
   end
 
+  def self.valid_schools
+    begin
+      $db.get('Schools In Kenya')["schools"]
+    rescue
+      nil
+    end
+  end
 
+  def self.closest_valid_school_match(school_name)
+    return school_name.upcase if self.valid_schools.include? school_name.upcase
+    return FuzzyMatch.new(self.valid_schools).find(school_name.upcase)
+  end
+
+  # Poorly named
+  def self.closest_school_match(school_name)
+    self.closest_valid_school_match(school_name)
+  end
+
+  def self.error_from_invalid_kenya_school(school_name)
+    return nil if self.valid_schools.include? school_name.upcase
+    closest_match = FuzzyMatch.new(valid_schools).find(school_name.upcase)
+    return "#{school_name} is not a valid school. Do you mean #{closest_match}?"
+  end
 end

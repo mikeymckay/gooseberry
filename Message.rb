@@ -37,10 +37,11 @@ class Message
       result = send_next_message
       # TODO check result to make sure message was sent before saving state
       complete_action if complete?
+      set_questions
       save_state
       return result
     rescue Exception => e
-      return "Error while processing:"
+      "Error while processing:"
       puts e.to_yaml
       puts e.backtrace.inspect
     end
@@ -289,7 +290,7 @@ class Message
       @state["current_question_index"] = @current_question_index
       message = @questions[@current_question_index]["text"]
       # Allows you to be able to refer to result["name_of_question"] in message
-    
+   
       message = eval "#{values_for_interpolation};\"#{message}\"" # Allows you to dynamically change the text of the message
       message = "#{@validation_message} #{message}" if @validation_message
     else
@@ -366,7 +367,7 @@ class Message
         message,
         {
           "linkId" => @linkId,
-          "bulkSMSMode" => 0
+          "bulkSMSMode" => if (@to == "20326") then 1 else 0 end # 1 needed for toll free
         }
       )
     end
