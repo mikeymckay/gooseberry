@@ -2,7 +2,7 @@
 echo "Deploying gooseberry design_docs and views to $1/gooseberry"
 echo "Browserifying and uglifying bundle.js"
 ./node_modules/browserify/bin/cmd.js -t coffeeify --extension='.coffee' Gooseberry.coffee | ./node_modules/uglifyjs/bin/uglifyjs > bundle.js
-exit
+#exit
 sed 's~http://localhost:5984~'"$1"'~g' -i bundle.js
 sed 's~http://localhost:8012~'"$1"'~g' -i bundle.js
 sed 's~http://localhost:9393~'"$1"'~g' -i bundle.js

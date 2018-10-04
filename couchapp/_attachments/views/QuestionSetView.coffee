@@ -46,7 +46,7 @@ class QuestionSetView extends Backbone.View
     json = @questionSet.toJSON()
     editor.setValue(JSON.stringify(json,null,2))
 
-    additionalDataId = "#{@questionSet.name()}_data"
+    additionalDataId = "data_#{@questionSet.name()}"
 
     Gooseberry.database.get additionalDataId
     .then (@data) =>
