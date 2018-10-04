@@ -21,6 +21,7 @@
     "coffeeify": "^2.0.1",
     "cron-ui": "^1.0.3",
     "cronstrue": "^1.57.0",
+    "csvtojson": "^2.0.8",
     "datatables.net": "^1.10.11",
     "filesaverjs": "^0.2.1",
     "jquery": "^2.2.0",
