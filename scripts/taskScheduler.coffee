@@ -3,11 +3,12 @@ moment = require 'moment'
 PouchDB = require 'pouchdb'
 _ = require 'underscore'
 request = require 'request'
+config = require './config'
 
 howOftenInMillisecondsIsThisRun = 5*60*1000 # 5 minutes
 
-database = new PouchDB("http://localhost:5984/gooseberry")
-#gooseberryIncomingURL = "http://gooseberry.tangerinecentral.org/20326/incoming"
+database = new PouchDB(config.database)
+#gooseberryIncomingURL = config.gooseberryIncomingURL
 gooseberryIncomingURL = "http://localhost:3000"
 
 database.allDocs
