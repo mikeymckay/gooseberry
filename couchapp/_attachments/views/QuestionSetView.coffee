@@ -37,6 +37,14 @@ class QuestionSetView extends Backbone.View
           left: 0;
           right: 0;
         }
+        table{
+          background-color: lightyellow;
+        }
+        td,th{
+          border: solid 1px black;
+          background-color: 
+
+        }
       </style>
       <h2>#{@questionSet.name()}</h2>
       <a href='#question_set/#{@questionSet.name()}/edit'>Edit</a>
@@ -61,22 +69,17 @@ class QuestionSetView extends Backbone.View
         <br/>
         <br/>
         <h3>Additional data for #{@questionSet.name()}:</h3>
-        <a href='#question_set/#{additionalDataId}/edit'>Edit</a>
+        <a href='#question_set/#{additionalDataId}/edit'>Edit Raw Additional Data</a>
         <div id='initiating'></div>
-        <pre class='readonly editor' id='question-set-data'></pre>
+        <div id='recipients'></div>
       "
       if @data.recipients
         @$("#initiating").html "
           <br/>
           <button id='initiate'>Initiate SMS to all recipients now</button>
+          <hr/>
           <br/>
           <br/>
-          <div id='recipients'>
-            <textarea style='width:100%;height:200px' id='csvRecipients'></textarea>
-            <br/>
-
-            <button id='updateRecipients'>Update Recipients</button>
-          </div>
           #{
             if @data.schedule
               "
@@ -97,17 +100,54 @@ class QuestionSetView extends Backbone.View
                 </div>
               "
           }
+          <div id='recipients'>
+            <div id='recipientTable'></div>
+
+            To update the list of recipients, paste in tab separated data here. The easiest way is just to copy and paste from a spreadsheet or if you already have recipients above, just copy and paste the table and update as needed. The first row of the spreadsheet should be the column names, which should include 'phone number' and 'name'.
+            <textarea style='width:100%;height:200px' id='csvRecipients'></textarea>
+            <br/>
+
+            <button id='updateRecipients'>Update Recipients</button>
+            <hr/>
+          </div>
         "
 
         @cronUi = new CronUI('#schedule', {initial: @data.schedule or '0 9 * * 1'})
         $("#schedule").on "change", (newSchedule) =>
           @$("#saveSchedule").show()
 
-      editor = ace.edit('question-set-data')
-      editor.setTheme('ace/theme/dawn')
-      editor.setReadOnly(true)
-      editor.getSession().setMode('ace/mode/json')
-      editor.setValue(JSON.stringify(@data,null,2))
+
+        headers = {}
+        _(@data.recipients).each (recipient) =>
+          _(Object.keys(recipient)).each (header) =>
+            headers[header] = true
+
+        @$("#recipientTable").html "
+          <table>
+            <thead>
+              #{
+                _(headers).map (ignore,header) => "<th>#{header}</th>"
+                .join("")
+              }
+            </thead>
+            <tbody>
+              #{
+                _(@data.recipients).map (recipient) =>
+                  "
+                  <tr>
+                    #{
+                      console.log recipient
+                      _(headers).map (ignore, header) => "<td>#{recipient[header]}</td>"
+                      .join("")
+                    }
+                  </tr>
+                  "
+                .join("")
+              }
+            </tbody>
+          </table>
+
+        "
     .catch (error) =>
       console.log error
       console.info "No extra data file for #{@questionSet.name()}"
