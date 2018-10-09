@@ -12,7 +12,7 @@ require 'brace/theme/dawn'
 
 moment = require 'moment'
 CsvToJson = require 'csvtojson'
-
+SweetAlert = require('sweetalert2')
 
 class QuestionSetView extends Backbone.View
   el: '#content'
@@ -24,6 +24,7 @@ class QuestionSetView extends Backbone.View
     @questionSet.fetch
       success: =>
         @render()
+
 
   render: =>
     @$el.html "
@@ -160,23 +161,46 @@ class QuestionSetView extends Backbone.View
     Gooseberry.database.bulkDocs(docs)
 
   initiate: =>
+    totalNumberOfRecipients = @data.recipients.length
+    totalNumberOfMessagesSent = 0
+    SweetAlert
+      title: "Initiating..."
+      text: "Sending messages to #{totalNumberOfRecipients}"
+      showCancelButton: true
+    .then (result) =>
+      if result.dismiss is SweetAlert.DismissReason.cancel
+        document.location.reload()
+        return
+      else
+        document.location.reload()
+
     processAllRecipients = =>
-      return if @data.recipients.length is 0
+      if @data.recipients.length is 0
+        $("#swal2-title").html("Done")
+        $("#swal2-content").html("Sent messages to #{totalNumberOfMessagesSent}")
+        return
       recipient = @data.recipients.pop()
-      console.log recipient
-      request.post "http://gooseberry.tangerinecentral.org/#{@data.numberToSendFrom}/incoming",
-        form:
-          to: @data.numberToSendFrom
-          from: recipient["phone number"]
-          text: "START #{@questionSet.name()}"
-          plain: true
-      .on "response", =>
-        _.delay =>
-          processAllRecipients()
-        , 500+(Math.random()*1000) # Delay 0.5-1.5 seconds (to not overwhelm server)
+      totalNumberOfMessagesSent += 1
+      $("#swal2-title").html("Initiating #{totalNumberOfMessagesSent}/#{totalNumberOfRecipients}")
+      $("#swal2-content").html("Sending to #{recipient.name} - #{recipient["phone number"]}")
+      $.post "http://gooseberry.tangerinecentral.org/#{@data.numberToSendFrom}/incoming",
+        to: @data.numberToSendFrom
+        from: recipient["phone number"]
+        text: "START #{@questionSet.name()}"
+        plain: true
+      .done =>
+        processAllRecipients()
+      .fail =>
+        alert("Initiation failed")
 
     if confirm "Are you sure you want to initiate #{@data.recipients.length} SMSs?"
+      @data.lastInitiatedDate = moment().format("YYYY-MM-DD HH:MM:SS")
+      Gooseberry.database.put @data
+
       processAllRecipients()
+      _.delay =>
+        processAllRecipients()
+      , 500
 
   saveSchedule: =>
     @data.numberToSendFrom = @$("#numberToSendFrom").val()

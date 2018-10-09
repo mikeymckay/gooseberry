@@ -4,7 +4,7 @@
   "description": "SMS Sending/Receiving",
   "main": "gooseberry.coffee",
   "scripts": {
-    "start": "npm run watch & npm run livereload & npm run static",
+    "start": "npm run watch & npm run livereload & npm run static & while sleep 2; do echo -n '.';done",
     "watch": "./node_modules/watchify/bin/cmd.js -v -t coffeeify --debug --extension='.coffee' Gooseberry.coffee -o bundle.js",
     "livereloadold": "livereloadify ./",
     "livereload": "./node_modules/livereloadify/cli.js --glob *.js ./",
@@ -29,10 +29,12 @@
     "json2csv-stream": "^0.1.3",
     "livereloadify": "^2.0.0",
     "mathjs": "^3.2.0",
+    "micromodal": "^0.3.2",
     "moment": "^2.13.0",
     "node-static": "^0.7.7",
     "pouchdb": "^5.2.0",
     "static": "^2.0.0",
+    "sweetalert2": "^7.28.4",
     "uglifyjs": "~2.4.10",
     "underscore": "^1.8.3",
     "watchify": "^3.7.0"
