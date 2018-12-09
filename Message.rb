@@ -17,6 +17,7 @@ class Message
   end
 
   def log_incoming_message
+    return # Commented out since we have a log in the logfile
     $db_log.save_doc ({
       "type" => "incoming",
       "to" => @to,
@@ -85,7 +86,12 @@ class Message
   end
 
   def get_state_for_user_with_question_set(question_set)
-    states_for_user.find{|state|state["question_set"] == question_set}
+    $db.view("states/states", {
+      "key" => [@from,question_set],
+      "include_docs" => true,
+      "limit" => 1,
+      "descending" => true
+    })['rows']
   end
 
   def set_most_recent_state
@@ -290,7 +296,8 @@ class Message
       @state["current_question_index"] = @current_question_index
       message = @questions[@current_question_index]["text"]
       # Allows you to be able to refer to result["name_of_question"] in message
-   
+      #
+      puts  "#{values_for_interpolation};\"#{message}\"" # Allows you to dynamically change the text of the message
       message = eval "#{values_for_interpolation};\"#{message}\"" # Allows you to dynamically change the text of the message
       message = "#{@validation_message} #{message}" if @validation_message
     else
@@ -346,6 +353,8 @@ class Message
       "time" => Time.now.strftime("%Y-%m-%d %H:%M:%S.%3N"),
       "response" => response
     })
+    return
+    # Keeping log in database is redundant to unicorn log file
     $db_log.save_doc ({
       "type" => "sent",
       "to" => to,
@@ -444,6 +453,8 @@ class Message
 
     previous_results = relevant_previous_results_with_updated_at()
 
+    return nil  unless previous_results
+
     load_results(previous_results, previous_results['updated_at'], "previous_results")
 
     return nil
@@ -466,7 +477,6 @@ class Message
   end
 
   def load_results(results, datetime, source)
-    puts "Loading results: #{results}"
     question_set = QuestionSets.get_question_set(@state["question_set"])
 
 
@@ -479,7 +489,7 @@ class Message
         question_index+=1
         question_set_question["name"] == question or question_set_question["text"] == question
       end
-      puts "Couldn't match previous question: #{question} with current questions: #{question_set["questions"]}\n so skipping it and will re-ask" if question_in_question_set.nil?
+      #puts "Couldn't match previous question: #{question} with current questions: #{question_set["questions"]}\n so skipping it and will re-ask" if question_in_question_set.nil?
       next if question_in_question_set.nil?
 
       next unless validation_message(question_in_question_set["validation"], answer).nil?

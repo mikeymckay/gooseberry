@@ -58,9 +58,20 @@ class QuestionSetView extends Backbone.View
     json = @questionSet.toJSON()
     editor.setValue(JSON.stringify(json,null,2))
 
-    additionalDataId = "data_#{@questionSet.name()}"
+    @additionalDataId = "data_#{@questionSet.name()}"
 
-    Gooseberry.database.get additionalDataId
+    Gooseberry.database.get @additionalDataId
+    .catch (error) =>
+      @$el.append "
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <button id='addData'>Add data for question set</button>
+      "
+      Promise.reject("No additional data")
     .then (@data) =>
       @$el.append "
         <br/>
@@ -69,7 +80,7 @@ class QuestionSetView extends Backbone.View
         <br/>
         <br/>
         <h3>Additional data for #{@questionSet.name()}:</h3>
-        <a href='#question_set/#{additionalDataId}/edit'>Edit Raw Additional Data</a>
+        <a href='#question_set/#{@additionalDataId}/edit'>Edit Raw Additional Data</a>
         <div id='initiating'></div>
         <div id='recipients'></div>
       "
@@ -84,7 +95,7 @@ class QuestionSetView extends Backbone.View
             if @data.schedule
               "
                 <div>
-                  Currently set to initiate SMS to all recipients #{Cronstrue.toString(@data.schedule)} from number: <input id='numberToSendFrom' value='#{@data.numberToSendFrom}'></input>.
+                  Currently set to initiate SMS to all recipients #{if @data.schedule then Cronstrue.toString(@data.schedule) else ""} from number: <input id='numberToSendFrom' value='#{@data.numberToSendFrom}'></input>.
                   <div id='newSchedule'>
                     Update this to initiate SMS to all recipients every <span id='schedule'></span>
                     <button id='saveSchedule'>Save</button>
@@ -148,14 +159,29 @@ class QuestionSetView extends Backbone.View
           </table>
 
         "
-    .catch (error) =>
-      console.log error
-      console.info "No extra data file for #{@questionSet.name()}"
 
   events:
     "click #initiate": "initiate"
     "click #saveSchedule": "saveSchedule"
     "click #updateRecipients": "updateRecipients"
+    "click #updateRecipients": "updateRecipients"
+    "click #addData": "addDataDoc"
+
+  addDataDoc: =>
+    Gooseberry.database.put 
+      _id: @additionalDataId
+      numberToSendFrom: "20326"
+      recipients: [
+        {
+          "phone number": "+25477777777"
+          name: "Sample Name"
+          shoe_size: "8.5"
+        }
+      ]
+    .then =>
+      @render()
+
+
 
   updateRecipients: =>
 
@@ -184,7 +210,7 @@ class QuestionSetView extends Backbone.View
        "_id": "scripted_result_#{phoneNumber}_#{updatedAt.replace(/ /,"_")}",
        "from": phoneNumber
        "complete": true,
-       "question_set": "READINGWITHKIDS",
+       "question_set": @questionSet.name(),
        "updated_at": updatedAt,
        "results":[]
 

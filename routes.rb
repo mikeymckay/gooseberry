@@ -27,7 +27,7 @@ def process_queue(params)
   def send_queued_message
     text = params["text"] || params["message"]
     message = "Thanks for your request to #{text}. We are currently receiving many messages and will respond to your request soon. You don't need to do anything else."
-    return "web:#{message}" if params["from"] == 'web'
+    return "#{params["from"]}:#{message}" if params["from"][0..2] == 'web' # if it starts with web
     # The number to which the message was sent
     $gateways[params["to"] || params["dest"]].send_message(
       params["from"] || params["org"],
